@@ -4,7 +4,7 @@
   :uploads $ []
     {}
       :from |dist/*
-      :to |cdn/phlox-workflow/
+      :to |cdn/pixel-way/
     {}
       :from |dist/index.html
-      :to |repo/Quamolit/phlox-workflow/
+      :to |repo/Quamolit/pixel-way/
