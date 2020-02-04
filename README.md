@@ -1,8 +1,10 @@
 
-Phlox Workflow(WIP)
+Pixel Way
 ----
 
-Workflow based on [phlox](https://github.com/Quamolit/phlox) and Calcit Editor.
+> a very tiny boring game.
+
+Previews http://repo.quamolit.org/pixel-way/ .
 
 ### Usage
 
