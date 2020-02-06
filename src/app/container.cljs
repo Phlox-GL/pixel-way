@@ -1,7 +1,6 @@
 
 (ns app.container
-  (:require [phlox.core :refer [defcomp rect circle text container graphics create-list]]
-            [phlox.util :refer [hslx]]))
+  (:require [phlox.core :refer [defcomp hslx rect circle text container graphics create-list]]))
 
 (defn on-reset [d!]
   (let [x 40
@@ -15,7 +14,7 @@
                               (if (or (and (< xi 3) (< yi 3))
                                       (and (> xi (- x 4)) (> yi (- y 4))))
                                 true
-                                (> (js/Math.random) 0.5))))
+                                (> (js/Math.random) 0.53))))
                            (vec))))
                    (vec))]
     (d! :reset {:x x, :y y, :grids (assoc-in grids [0 0] 1)})))
