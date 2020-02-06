@@ -1,4 +1,4 @@
 
 (ns app.schema )
 
-(def store {:tab :drafts, :x 0})
+(def store {:win? false, :x 0, :y 0, :grids []})
