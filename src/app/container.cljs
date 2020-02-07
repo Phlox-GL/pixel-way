@@ -4,7 +4,7 @@
 
 (defn on-reset [d!]
   (let [x 70
-        y 30
+        y 40
         grids (->> (range y)
                    (map
                     (fn [yi]
@@ -49,19 +49,19 @@
     (container
      {:position {:x 1100, :y 40}}
      (rect
-      {:options {:x 0, :y 0, :width 60, :height 34},
+      {:options {:x 0, :y 0, :width 48, :height 34},
        :fill (hslx 40 80 80),
        :on {:pointerdown (fn [e d!] (on-reset d!))}}
       (text
-       {:text "Reset!",
+       {:text "Run!",
         :position {:x 8, :y 4},
         :style {:fill (hslx 120 80 20), :font-size 18, :font-family "Josefin Sans"}})))
     (if (:win? store)
       (container
        {:position {:x 600, :y 20}}
        (rect
-        {:options {:x 0, :y 0, :width 440, :height 130}, :fill (hslx 300 20 30), :alpha 0.8})
+        {:options {:x 0, :y 0, :width 460, :height 130}, :fill (hslx 300 20 30), :alpha 0.8})
        (text
-        {:text "Winning!",
-         :position {:x 40, :y 0},
-         :style {:fill (hslx 30 90 100), :font-size 100, :font-family "Josefin Sans"}}))))))
+        {:text "Take a rest.",
+         :position {:x 20, :y 0},
+         :style {:fill (hslx 30 90 100), :font-size 96, :font-family "Josefin Sans"}}))))))

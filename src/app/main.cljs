@@ -16,7 +16,7 @@
 
 (defn start-undulating! []
   (dispatch! :undulate nil)
-  (js/setTimeout (fn [] (start-undulating!)) 640))
+  (js/setTimeout (fn [] (start-undulating!)) (* 6000 (js/Math.pow (js/Math.random) 5))))
 
 (defn main! []
   (comment js/console.log PIXI)

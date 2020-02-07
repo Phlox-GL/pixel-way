@@ -37,9 +37,9 @@
                     :else
                       (let [x (js/Math.random)]
                         (cond
-                          (and (> x 0.1) (< x 0.12)) (not cell)
-                          (and (> x 0.2) (< x 0.22)) false
-                          (and (> x 0.3) (< x 0.306)) true
+                          (and (> x 0.1) (< x 0.17)) (not cell)
+                          (and (> x 0.3) (< x 0.39)) false
+                          (and (> x 0.5) (< x 0.52)) true
                           :else cell)))))
                vec)))
        vec))
