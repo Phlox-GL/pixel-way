@@ -14,10 +14,15 @@
   (let [op-id (shortid/generate), op-time (.now js/Date)]
     (reset! *store (updater @*store op op-data op-id op-time))))
 
+(defn start-undulating! []
+  (dispatch! :undulate nil)
+  (js/setTimeout (fn [] (start-undulating!)) (* 6000 (js/Math.pow (js/Math.random) 5))))
+
 (defn main! []
   (comment js/console.log PIXI)
   (render! (comp-container @*store) dispatch! {})
   (add-watch *store :change (fn [] (render! (comp-container @*store) dispatch! {})))
+  (start-undulating!)
   (println "App Started"))
 
 (defn reload! []
