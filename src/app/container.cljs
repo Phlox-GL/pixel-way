@@ -27,7 +27,7 @@
     {}
     (create-list
      :container
-     {:position {:x 20, :y 20}}
+     {:position [20 20]}
      (->> grids
           (map-indexed
            (fn [yi xs]
@@ -35,7 +35,8 @@
                   (map-indexed
                    (fn [xi v]
                      (rect
-                      {:options {:x (* xi 15), :y (* yi 15), :width 14, :height 14},
+                      {:position [(* xi 15) (* yi 15)],
+                       :size [14 14],
                        :fill (case v
                          1 (hslx 120 80 80)
                          true (hslx 200 80 40)
@@ -47,21 +48,21 @@
           (apply concat)
           (map-indexed (fn [idx x] [idx x]))))
     (container
-     {:position {:x 1100, :y 40}}
+     {:position [1100 40]}
      (rect
-      {:options {:x 0, :y 0, :width 48, :height 34},
+      {:position [0 0],
+       :size [48 34],
        :fill (hslx 40 80 80),
        :on {:pointerdown (fn [e d!] (on-reset d!))}}
       (text
        {:text "Run!",
-        :position {:x 8, :y 4},
+        :position [8 4],
         :style {:fill (hslx 120 80 20), :font-size 18, :font-family "Josefin Sans"}})))
     (if (:win? store)
       (container
-       {:position {:x 600, :y 20}}
-       (rect
-        {:options {:x 0, :y 0, :width 460, :height 130}, :fill (hslx 300 20 30), :alpha 0.8})
+       {:position [600 20]}
+       (rect {:position [0 0], :size [460 130], :fill (hslx 300 20 30), :alpha 0.8})
        (text
         {:text "Take a rest.",
-         :position {:x 20, :y 0},
+         :position [20 0],
          :style {:fill (hslx 30 90 100), :font-size 96, :font-family "Josefin Sans"}}))))))
