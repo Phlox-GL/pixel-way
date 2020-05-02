@@ -6,14 +6,17 @@
             [app.schema :as schema]
             ["shortid" :as shortid]
             [app.updater :refer [updater]]
-            ["fontfaceobserver" :as FontFaceObserver]))
+            ["fontfaceobserver" :as FontFaceObserver]
+            [app.config :refer [dev?]]))
 
 (defonce *store (atom schema/store))
 
 (defn dispatch! [op op-data]
-  (comment println "dispatch!" op op-data)
-  (let [op-id (shortid/generate), op-time (.now js/Date)]
-    (reset! *store (updater @*store op op-data op-id op-time))))
+  (when dev? (println "dispatch!" op op-data))
+  (let [op-id (shortid/generate)
+        op-time (.now js/Date)
+        new-store (updater @*store op op-data op-id op-time)]
+    (when (not= @*store new-store) (reset! *store new-store))))
 
 (def global-fonts
   (js/Promise.all
