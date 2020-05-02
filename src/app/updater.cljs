@@ -2,26 +2,27 @@
 (ns app.updater )
 
 (defn turn-grids [store op op-data]
-  (let [x (:x op-data)
-        y (:y op-data)
-        next-store (update
-                    store
-                    :grids
-                    (fn [grids]
-                      (cond
-                        (or (= 1 (get-in grids [y (dec x)]))
-                            (= 1 (get-in grids [(dec y) (dec x)]))
-                            (= 1 (get-in grids [(dec y) x]))
-                            (= 1 (get-in grids [(inc y) x]))
-                            (= 1 (get-in grids [(inc y) (inc x)]))
-                            (= 1 (get-in grids [y (inc x)]))
-                            (= 1 (get-in grids [(dec y) (inc x)]))
-                            (= 1 (get-in grids [(inc y) (dec x)])))
-                          (assoc-in grids [y x] 1)
-                        :else grids)))]
-    (if (= 1 (get-in next-store [:grids (dec (:y next-store)) (dec (:x next-store))]))
-      (assoc next-store :win? true)
-      next-store)))
+  (let [x (:x op-data), y (:y op-data)]
+    (if (= 1 (get-in store [:grids y x]))
+      store
+      (let [next-store (update
+                        store
+                        :grids
+                        (fn [grids]
+                          (cond
+                            (or (= 1 (get-in grids [y (dec x)]))
+                                (= 1 (get-in grids [(dec y) (dec x)]))
+                                (= 1 (get-in grids [(dec y) x]))
+                                (= 1 (get-in grids [(inc y) x]))
+                                (= 1 (get-in grids [(inc y) (inc x)]))
+                                (= 1 (get-in grids [y (inc x)]))
+                                (= 1 (get-in grids [(dec y) (inc x)]))
+                                (= 1 (get-in grids [(inc y) (dec x)])))
+                              (assoc-in grids [y x] 1)
+                            :else grids)))]
+        (if (= 1 (get-in next-store [:grids (dec (:y next-store)) (dec (:x next-store))]))
+          (assoc next-store :win? true)
+          next-store)))))
 
 (defn undulate-grids [grids x y]
   (->> grids
