@@ -63,26 +63,26 @@
                 , store $ let
                     next-store $ update store :grids
                       fn (grids)
-                        cond
-                            or
-                              = 1 $ get-in grids
-                                [] y $ dec x
-                              = 1 $ get-in grids
-                                [] (dec y) (dec x)
-                              = 1 $ get-in grids
-                                [] (dec y) x
-                              = 1 $ get-in grids
-                                [] (inc y) x
-                              = 1 $ get-in grids
-                                [] (inc y) (inc x)
-                              = 1 $ get-in grids
-                                [] y $ inc x
-                              = 1 $ get-in grids
-                                [] (dec y) (inc x)
-                              = 1 $ get-in grids
-                                [] (inc y) (dec x)
-                            assoc-in grids ([] y x) 1
-                          :else grids
+                        if
+                          or
+                            = 1 $ load-in grids
+                              [] y $ dec x
+                            = 1 $ load-in grids
+                              [] (dec y) (dec x)
+                            = 1 $ load-in grids
+                              [] (dec y) x
+                            = 1 $ load-in grids
+                              [] (inc y) x
+                            = 1 $ load-in grids
+                              [] (inc y) (inc x)
+                            = 1 $ load-in grids
+                              [] y $ inc x
+                            = 1 $ load-in grids
+                              [] (dec y) (inc x)
+                            = 1 $ load-in grids
+                              [] (inc y) (dec x)
+                          assoc-in grids ([] y x) 1
+                          , grids
                   if
                     = 1 $ get-in next-store
                       [] :grids
@@ -90,6 +90,13 @@
                         dec $ :x next-store
                     assoc next-store :win? true
                     , next-store
+        |load-in $ quote
+          defn load-in (xs pair)
+            let[] (i j) pair $ if (&list:contains? xs i)
+              &let
+                ys $ nth xs i
+                if (&list:contains? ys j) (nth ys j)
+              , nil
     |app.container $ {}
       :ns $ quote
         ns app.container $ :require
@@ -108,7 +115,7 @@
                   :on $ {}
                     :touchmove $ fn (e d!) (on-touch grids e d!)
                 create-list :container
-                  {} $ :position ([] 20 20)
+                  {} $ :position ([] -380 -280)
                   -> grids
                     map-indexed $ fn (yi xs)
                       -> xs $ map-indexed
@@ -132,7 +139,7 @@
                     (fn (xs) (&list:concat & xs))
                     map-indexed $ fn (idx x) ([] idx x)
                 container
-                  {} $ :position ([] 940 40)
+                  {} $ :position ([] 440 -260)
                   rect
                     {}
                       :position $ [] 0 0
@@ -148,7 +155,7 @@
                         :font-family "\"Josefin Sans"
                 if (:win? store)
                   container
-                    {} $ :position ([] 560 20)
+                    {} $ :position ([] 60 -80)
                     rect $ {}
                       :position $ [] 0 0
                       :size $ [] 460 130
@@ -238,7 +245,7 @@
             when dev? $ println "\"dispatch!" op op-data
             let
                 op-id $ shortid/generate
-                op-time $ .now js/Date
+                op-time $ js/Date.now
                 new-store $ updater @*store op op-data op-id op-time
               when (not= @*store new-store) (reset! *store new-store)
         |reload! $ quote
