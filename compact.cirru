@@ -1,8 +1,9 @@
 
 {} (:package |app)
   :configs $ {} (:init-fn |app.main/main!) (:reload-fn |app.main/reload!)
-    :modules $ [] |memof/ |lilac/ |respo.calcit/ |respo-ui.calcit/ |phlox.calcit/
+    :modules $ [] |memof/ |lilac/ |respo.calcit/ |respo-ui.calcit/ |phlox/ |touch-control/
     :version nil
+  :entries $ {}
   :files $ {}
     |app.schema $ {}
       :ns $ quote (ns app.schema)
@@ -30,9 +31,9 @@
                       true $ let
                           x $ js/Math.random
                         cond
-                            and (> x 0.1) (< x 0.17)
+                            and (> x 0.1) (< x 0.15)
                             not cell
-                          (and (> x 0.3) (< x 0.39))
+                          (and (> x 0.3) (< x 0.4))
                             , false
                           (and (> x 0.5) (< x 0.52))
                             , true
@@ -139,7 +140,7 @@
                     (fn (xs) (&list:concat & xs))
                     map-indexed $ fn (idx x) ([] idx x)
                 container
-                  {} $ :position ([] 440 -260)
+                  {} $ :position ([] -400 -360)
                   rect
                     {}
                       :position $ [] 0 0
@@ -147,7 +148,7 @@
                       :fill $ hslx 40 80 80
                       :on $ {}
                         :pointerdown $ fn (e d!) (on-reset d!)
-                    text $ {} (:text "\"Run!")
+                    text $ {} (:text "\"润!")
                       :position $ [] 8 4
                       :style $ {}
                         :fill $ hslx 120 80 20
@@ -155,17 +156,17 @@
                         :font-family "\"Josefin Sans"
                 if (:win? store)
                   container
-                    {} $ :position ([] 60 -80)
+                    {} $ :position ([] 400 280)
                     rect $ {}
                       :position $ [] 0 0
-                      :size $ [] 460 130
+                      :size $ [] 230 60
                       :fill $ hslx 300 20 30
                       :alpha 0.8
                     text $ {} (:text "\"Take a rest.")
                       :position $ [] 20 0
                       :style $ {}
                         :fill $ hslx 30 90 100
-                        :font-size 96
+                        :font-size 48
                         :font-family "\"Josefin Sans"
         |gap $ quote
           def gap $ / 1 15
@@ -184,7 +185,7 @@
                             and
                               > xi $ - x 4
                               > yi $ - y 4
-                          , true $ > (js/Math.random) 0.48
+                          , true $ > (js/Math.random) 0.64
               d! :reset $ {} (:x x) (:y y)
                 :grids $ assoc-in grids ([] 0 0) 1
         |on-touch $ quote
@@ -210,15 +211,16 @@
     |app.main $ {}
       :ns $ quote
         ns app.main $ :require ([] "\"pixi.js" :as PIXI)
-          [] phlox.core :refer $ [] render! clear-phlox-caches!
+          [] phlox.core :refer $ [] render! clear-phlox-caches! on-control-event
           [] app.container :refer $ [] comp-container
           [] app.schema :as schema
-          [] "\"shortid" :as shortid
+          [] "\"nanoid" :refer $ nanoid
           [] app.updater :refer $ [] updater
           [] "\"fontfaceobserver-es" :default FontFaceObserver
           [] app.config :refer $ [] dev?
           "\"./calcit.build-errors" :default build-errors
           "\"bottom-tip" :default hud!
+          touch-control.core :refer $ render-control! start-control-loop! replace-control-loop!
       :defs $ {}
         |render-app! $ quote
           defn render-app! () $ render! (comp-container @*store) dispatch! ({})
@@ -226,12 +228,16 @@
           defn start-undulating! () (dispatch! :undulate nil)
             js/setTimeout
               fn () $ start-undulating!
-              * 6000 $ js/Math.pow (js/Math.random) 5
+              * 6000 $ js/Math.pow
+                + 0.02 $ js/Math.random
+                , 5
         |main! $ quote
           defn main! () (; js/console.log PIXI)
-            -> global-fonts $ .then
+            -> global-fonts $ .!then
               fn (e) (render-app!)
             add-watch *store :change $ fn (s p) (render-app!)
+            render-control!
+            start-control-loop! 8 on-control-event
             start-undulating!
             println "\"App Started"
         |*store $ quote (defatom *store schema/store)
@@ -244,7 +250,7 @@
           defn dispatch! (op op-data)
             when dev? $ println "\"dispatch!" op op-data
             let
-                op-id $ shortid/generate
+                op-id $ nanoid
                 op-time $ js/Date.now
                 new-store $ updater @*store op op-data op-id op-time
               when (not= @*store new-store) (reset! *store new-store)
@@ -253,6 +259,7 @@
             do (println "\"Code updated.") (clear-phlox-caches!) (remove-watch *store :change)
               add-watch *store :change $ fn (store prev) (render-app!)
               render-app!
+              replace-control-loop! 8 on-control-event
               hud! "\"ok~" "\"Ok"
             hud! "\"error" build-errors
     |app.page $ {}
