@@ -1,107 +1,17 @@
 
 {} (:package |app)
-  :configs $ {} (:init-fn |app.main/main!) (:reload-fn |app.main/reload!)
+  :configs $ {} (:init-fn |app.main/main!) (:reload-fn |app.main/reload!) (:version nil)
     :modules $ [] |memof/ |lilac/ |respo.calcit/ |respo-ui.calcit/ |phlox/ |touch-control/
-    :version nil
   :entries $ {}
   :files $ {}
-    |app.schema $ {}
-      :ns $ quote (ns app.schema)
+    |app.config $ {}
       :defs $ {}
-        |store $ quote
-          def store $ {} (:win? false) (:x 0) (:y 0)
-            :grids $ []
-    |app.updater $ {}
-      :ns $ quote
-        ns app.updater $ :require
-          phlox.cursor :refer $ update-states
-      :defs $ {}
-        |undulate-grids $ quote
-          defn undulate-grids (grids x y)
-            -> grids $ map-indexed
-              fn (yi row)
-                -> row $ map-indexed
-                  fn (xi cell)
-                    cond
-                        and (< xi 3) (< yi 3)
-                        , cell
-                      (and (> xi (- x 4)) (> yi (- y 4)))
-                        , cell
-                      (= cell 1) cell
-                      true $ let
-                          x $ js/Math.random
-                        cond
-                            and (> x 0.1) (< x 0.15)
-                            not cell
-                          (and (> x 0.3) (< x 0.4))
-                            , false
-                          (and (> x 0.5) (< x 0.52))
-                            , true
-                          true cell
-        |updater $ quote
-          defn updater (store op op-data op-id op-time)
-            case-default op
-              do (println "\"Unknown op:" op) store
-              :states $ update-states store op-data
-              :reset $ merge store
-                {}
-                  :x $ :x op-data
-                  :y $ :y op-data
-                  :grids $ :grids op-data
-                  :win? false
-              :turn $ turn-grids store op op-data
-              :undulate $ if (:win? store) store
-                update store :grids $ fn (grids)
-                  undulate-grids grids (:x store) (:y store)
-              :hydrate-storage op-data
-        |turn-grids $ quote
-          defn turn-grids (store op op-data)
-            let
-                x $ :x op-data
-                y $ :y op-data
-              if
-                = 1 $ get-in store ([] :grids y x)
-                , store $ let
-                    next-store $ update store :grids
-                      fn (grids)
-                        if
-                          or
-                            = 1 $ load-in grids
-                              [] y $ dec x
-                            = 1 $ load-in grids
-                              [] (dec y) (dec x)
-                            = 1 $ load-in grids
-                              [] (dec y) x
-                            = 1 $ load-in grids
-                              [] (inc y) x
-                            = 1 $ load-in grids
-                              [] (inc y) (inc x)
-                            = 1 $ load-in grids
-                              [] y $ inc x
-                            = 1 $ load-in grids
-                              [] (dec y) (inc x)
-                            = 1 $ load-in grids
-                              [] (inc y) (dec x)
-                          assoc-in grids ([] y x) 1
-                          , grids
-                  if
-                    = 1 $ get-in next-store
-                      [] :grids
-                        dec $ :y next-store
-                        dec $ :x next-store
-                    assoc next-store :win? true
-                    , next-store
-        |load-in $ quote
-          defn load-in (xs pair)
-            let[] (i j) pair $ if (&list:contains? xs i)
-              &let
-                ys $ nth xs i
-                if (&list:contains? ys j) (nth ys j)
-              , nil
+        |dev? $ quote
+          def dev? $ = "\"dev" (get-env "\"mode" "\"release")
+        |site $ quote
+          def site $ {} (:title "\"Pixel way") (:icon "\"http://cdn.tiye.me/logo/quamolit.png") (:storage-key "\"pixel-way")
+      :ns $ quote (ns app.config)
     |app.container $ {}
-      :ns $ quote
-        ns app.container $ :require
-          [] phlox.core :refer $ [] defcomp hslx rect circle text container graphics create-list
       :defs $ {}
         |comp-container $ quote
           defcomp comp-container (store)
@@ -208,7 +118,51 @@
                 d! :turn $ {}
                   :x $ js/Math.floor xi
                   :y $ js/Math.floor yi
+      :ns $ quote
+        ns app.container $ :require
+          [] phlox.core :refer $ [] defcomp hslx rect circle text container graphics create-list
     |app.main $ {}
+      :defs $ {}
+        |*store $ quote (defatom *store schema/store)
+        |dispatch! $ quote
+          defn dispatch! (op op-data)
+            when dev? $ println "\"dispatch!" op op-data
+            let
+                op-id $ nanoid
+                op-time $ js/Date.now
+                new-store $ updater @*store op op-data op-id op-time
+              when (not= @*store new-store) (reset! *store new-store)
+        |global-fonts $ quote
+          def global-fonts $ js/Promise.all
+            js-array
+              .!load $ new FontFaceObserver "\"Josefin Sans"
+              .!load $ new FontFaceObserver "\"Hind"
+        |main! $ quote
+          defn main! () (; js/console.log PIXI)
+            -> global-fonts $ .!then
+              fn (e) (render-app!)
+            add-watch *store :change $ fn (s p) (render-app!)
+            render-control!
+            start-control-loop! 8 on-control-event
+            start-undulating!
+            println "\"App Started"
+        |reload! $ quote
+          defn reload! () $ if (nil? build-errors)
+            do (println "\"Code updated.") (clear-phlox-caches!) (remove-watch *store :change)
+              add-watch *store :change $ fn (store prev) (render-app!)
+              render-app!
+              replace-control-loop! 8 on-control-event
+              hud! "\"ok~" "\"Ok"
+            hud! "\"error" build-errors
+        |render-app! $ quote
+          defn render-app! () $ render! (comp-container @*store) dispatch! ({})
+        |start-undulating! $ quote
+          defn start-undulating! () (dispatch! :undulate nil)
+            js/setTimeout
+              fn () $ start-undulating!
+              * 6000 $ js/Math.pow
+                + 0.02 $ js/Math.random
+                , 5
       :ns $ quote
         ns app.main $ :require ([] "\"pixi.js" :as PIXI)
           [] phlox.core :refer $ [] render! clear-phlox-caches! on-control-event
@@ -221,57 +175,7 @@
           "\"./calcit.build-errors" :default build-errors
           "\"bottom-tip" :default hud!
           touch-control.core :refer $ render-control! start-control-loop! replace-control-loop!
-      :defs $ {}
-        |render-app! $ quote
-          defn render-app! () $ render! (comp-container @*store) dispatch! ({})
-        |start-undulating! $ quote
-          defn start-undulating! () (dispatch! :undulate nil)
-            js/setTimeout
-              fn () $ start-undulating!
-              * 6000 $ js/Math.pow
-                + 0.02 $ js/Math.random
-                , 5
-        |main! $ quote
-          defn main! () (; js/console.log PIXI)
-            -> global-fonts $ .!then
-              fn (e) (render-app!)
-            add-watch *store :change $ fn (s p) (render-app!)
-            render-control!
-            start-control-loop! 8 on-control-event
-            start-undulating!
-            println "\"App Started"
-        |*store $ quote (defatom *store schema/store)
-        |global-fonts $ quote
-          def global-fonts $ js/Promise.all
-            js-array
-              .!load $ new FontFaceObserver "\"Josefin Sans"
-              .!load $ new FontFaceObserver "\"Hind"
-        |dispatch! $ quote
-          defn dispatch! (op op-data)
-            when dev? $ println "\"dispatch!" op op-data
-            let
-                op-id $ nanoid
-                op-time $ js/Date.now
-                new-store $ updater @*store op op-data op-id op-time
-              when (not= @*store new-store) (reset! *store new-store)
-        |reload! $ quote
-          defn reload! () $ if (nil? build-errors)
-            do (println "\"Code updated.") (clear-phlox-caches!) (remove-watch *store :change)
-              add-watch *store :change $ fn (store prev) (render-app!)
-              render-app!
-              replace-control-loop! 8 on-control-event
-              hud! "\"ok~" "\"Ok"
-            hud! "\"error" build-errors
     |app.page $ {}
-      :ns $ quote
-        ns app.page
-          :require
-            [] shell-page.core :refer $ [] make-page spit slurp
-            [] app.schema :as schema
-            [] cljs.reader :refer $ [] read-string
-            [] app.config :as config
-            [] cumulo-util.build :refer $ [] get-ip!
-          :require-macros $ [] clojure.core.strint :refer ([] <<)
       :defs $ {}
         |base-info $ quote
           def base-info $ {}
@@ -279,6 +183,18 @@
             :icon $ :icon config/site
             :ssr nil
             :inline-html nil
+        |dev-page $ quote
+          defn dev-page () $ make-page |
+            merge base-info $ {}
+              :styles $ [] (<< "\"http://~(get-ip!):8100/main.css")
+              :scripts $ [] "\"/client.js"
+              :inline-styles $ [] (slurp "\"./entry/main.css")
+        |main! $ quote
+          defn main! ()
+            println "\"Running mode:" $ if config/dev? "\"dev" "\"release"
+            if config/dev?
+              spit "\"target/index.html" $ dev-page
+              spit "\"dist/index.html" $ prod-page
         |prod-page $ quote
           defn prod-page () $ let
               assets $ read-string (slurp "\"dist/assets.edn")
@@ -289,28 +205,105 @@
                 :styles $ [] (:release-ui config/site)
                 :scripts $ map ("#()" -> % :output-name prefix-cdn) assets
                 :inline-styles $ [] (slurp "\"./entry/main.css")
-        |main! $ quote
-          defn main! ()
-            println "\"Running mode:" $ if config/dev? "\"dev" "\"release"
-            if config/dev?
-              spit "\"target/index.html" $ dev-page
-              spit "\"dist/index.html" $ prod-page
-        |dev-page $ quote
-          defn dev-page () $ make-page |
-            merge base-info $ {}
-              :styles $ [] (<< "\"http://~(get-ip!):8100/main.css")
-              :scripts $ [] "\"/client.js"
-              :inline-styles $ [] (slurp "\"./entry/main.css")
-    |app.config $ {}
-      :ns $ quote (ns app.config)
+      :ns $ quote
+        ns app.page
+          :require
+            [] shell-page.core :refer $ [] make-page spit slurp
+            [] app.schema :as schema
+            [] cljs.reader :refer $ [] read-string
+            [] app.config :as config
+            [] cumulo-util.build :refer $ [] get-ip!
+          :require-macros $ [] clojure.core.strint :refer ([] <<)
+    |app.schema $ {}
       :defs $ {}
-        |cdn? $ quote
-          def cdn? $ cond
-              exists? js/window
-              , false
-            (exists? js/process) (= "\"true" js/process.env.cdn)
-            :else false
-        |dev? $ quote
-          def dev? $ = "\"dev" (get-env "\"mode")
-        |site $ quote
-          def site $ {} (:dev-ui "\"http://localhost:8100/main.css") (:release-ui "\"http://cdn.tiye.me/favored-fonts/main.css") (:cdn-url "\"http://cdn.tiye.me/pixel-way/") (:title "\"Pixel way") (:icon "\"http://cdn.tiye.me/logo/quamolit.png") (:storage-key "\"pixel-way")
+        |store $ quote
+          def store $ {} (:win? false) (:x 0) (:y 0)
+            :grids $ []
+      :ns $ quote (ns app.schema)
+    |app.updater $ {}
+      :defs $ {}
+        |load-in $ quote
+          defn load-in (xs pair)
+            let[] (i j) pair $ if (&list:contains? xs i)
+              &let
+                ys $ nth xs i
+                if (&list:contains? ys j) (nth ys j)
+              , nil
+        |turn-grids $ quote
+          defn turn-grids (store op op-data)
+            let
+                x $ :x op-data
+                y $ :y op-data
+              if
+                = 1 $ get-in store ([] :grids y x)
+                , store $ let
+                    next-store $ update store :grids
+                      fn (grids)
+                        if
+                          or
+                            = 1 $ load-in grids
+                              [] y $ dec x
+                            = 1 $ load-in grids
+                              [] (dec y) (dec x)
+                            = 1 $ load-in grids
+                              [] (dec y) x
+                            = 1 $ load-in grids
+                              [] (inc y) x
+                            = 1 $ load-in grids
+                              [] (inc y) (inc x)
+                            = 1 $ load-in grids
+                              [] y $ inc x
+                            = 1 $ load-in grids
+                              [] (dec y) (inc x)
+                            = 1 $ load-in grids
+                              [] (inc y) (dec x)
+                          assoc-in grids ([] y x) 1
+                          , grids
+                  if
+                    = 1 $ get-in next-store
+                      [] :grids
+                        dec $ :y next-store
+                        dec $ :x next-store
+                    assoc next-store :win? true
+                    , next-store
+        |undulate-grids $ quote
+          defn undulate-grids (grids x y)
+            -> grids $ map-indexed
+              fn (yi row)
+                -> row $ map-indexed
+                  fn (xi cell)
+                    cond
+                        and (< xi 3) (< yi 3)
+                        , cell
+                      (and (> xi (- x 4)) (> yi (- y 4)))
+                        , cell
+                      (= cell 1) cell
+                      true $ let
+                          x $ js/Math.random
+                        cond
+                            and (> x 0.1) (< x 0.15)
+                            not cell
+                          (and (> x 0.3) (< x 0.4))
+                            , false
+                          (and (> x 0.5) (< x 0.52))
+                            , true
+                          true cell
+        |updater $ quote
+          defn updater (store op op-data op-id op-time)
+            case-default op
+              do (println "\"Unknown op:" op) store
+              :states $ update-states store op-data
+              :reset $ merge store
+                {}
+                  :x $ :x op-data
+                  :y $ :y op-data
+                  :grids $ :grids op-data
+                  :win? false
+              :turn $ turn-grids store op op-data
+              :undulate $ if (:win? store) store
+                update store :grids $ fn (grids)
+                  undulate-grids grids (:x store) (:y store)
+              :hydrate-storage op-data
+      :ns $ quote
+        ns app.updater $ :require
+          phlox.cursor :refer $ update-states
