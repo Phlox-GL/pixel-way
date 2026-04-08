@@ -1,9 +1,12 @@
 {
   "name": "phlox",
   "version": "0.1.0",
+  "packageManager": "yarn@4.12.0",
   "description": "a PIXI DSL in ClojureScript",
   "main": "index.js",
-  "scripts": {},
+  "scripts": {
+    "compile": "cr js"
+  },
   "repository": {
     "type": "git",
     "url": "git@github.com:mvc-works/calcit-workflow.git"
@@ -11,14 +14,17 @@
   "author": "jiyinyiyong",
   "license": "MIT",
   "devDependencies": {
-    "vite": "^4.3.9"
+    "vite": "^8.0.7"
   },
   "dependencies": {
-    "@calcit/procs": "^0.7.0",
+    "@calcit/procs": "^0.12.14",
     "@quamolit/phlox-utils": "^0.0.2",
     "@quamolit/touch-control": "^0.0.13",
     "bottom-tip": "^0.1.5",
+    "dayjs": "^1.11.20",
     "fontfaceobserver-es": "^3.3.3",
+    "hsluv": "^1.0.1",
+    "mobile-detect": "^1.4.5",
     "nanoid": "^4.0.2",
     "pixi.js": "7.2.4",
     "shortid": "^2.2.16"

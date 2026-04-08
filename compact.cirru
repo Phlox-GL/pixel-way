@@ -340,7 +340,7 @@
             defn updater (store op op-data op-id op-time)
               case-default op
                 do (println "|Unknown op:" op) store
-                :states $ update-states store op-data
+                :states $ update-states store (nth op-data 0) (nth op-data 1)
                 :reset $ merge store
                   {}
                     :x $ :x op-data
