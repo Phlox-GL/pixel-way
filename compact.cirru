@@ -142,12 +142,14 @@
           :examples $ []
         |dispatch! $ %{} :CodeEntry (:doc |) (:schema nil)
           :code $ quote
-            defn dispatch! (op op-data)
-              when dev? $ println |dispatch! op op-data
+            defn dispatch! (op)
+              when
+                and dev? $ not= (nth op 0) :states
+                println |dispatch! op
               let
                   op-id $ nanoid
                   op-time $ js/Date.now
-                  new-store $ updater @*store op op-data op-id op-time
+                  new-store $ updater @*store op op-id op-time
                 when (not= @*store new-store) (reset! *store new-store)
           :examples $ []
         |global-fonts $ %{} :CodeEntry (:doc |) (:schema nil)
@@ -184,7 +186,8 @@
           :examples $ []
         |start-undulating! $ %{} :CodeEntry (:doc |) (:schema nil)
           :code $ quote
-            defn start-undulating! () (dispatch! :undulate nil)
+            defn start-undulating! ()
+              dispatch! $ :: :undulate
               js/setTimeout
                 fn () $ start-undulating!
                 * 6000 $ js/Math.pow
@@ -337,21 +340,21 @@
           :examples $ []
         |updater $ %{} :CodeEntry (:doc |) (:schema nil)
           :code $ quote
-            defn updater (store op op-data op-id op-time)
-              case-default op
-                do (println "|Unknown op:" op) store
-                :states $ update-states store (nth op-data 0) (nth op-data 1)
-                :reset $ merge store
+            defn updater (store op op-id op-time)
+              tag-match op
+                (:states cursor s) (update-states store cursor s)
+                (:reset d) $ merge store
                   {}
-                    :x $ :x op-data
-                    :y $ :y op-data
-                    :grids $ :grids op-data
+                    :x $ :x d
+                    :y $ :y d
+                    :grids $ :grids d
                     :win? false
-                :turn $ turn-grids store op op-data
-                :undulate $ if (:win? store) store
+                (:turn d) (turn-grids store :turn d)
+                (:undulate) $ if (:win? store) store
                   update store :grids $ fn (grids)
                     undulate-grids grids (:x store) (:y store)
-                :hydrate-storage op-data
+                (:hydrate-storage d) d
+                _ $ do (println "|Unknown op:" op) store
           :examples $ []
       :ns $ %{} :NsEntry (:doc |)
         :code $ quote
