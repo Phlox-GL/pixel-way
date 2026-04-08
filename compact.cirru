@@ -1,6 +1,6 @@
 
 {} (:about "|file is generated - never edit directly; learn cr edit/tree workflows before changing") (:package |app)
-  :configs $ {} (:init-fn |app.main/main!) (:reload-fn |app.main/reload!) (:version |0.0.1)
+  :configs $ {} (:init-fn |app.main/main!) (:reload-fn |app.main/reload!) (:version |0.0.0)
     :modules $ [] |memof/ |lilac/ |respo.calcit/ |respo-ui.calcit/ |phlox/ |touch-control/
   :entries $ {}
   :files $ {}
@@ -342,17 +342,19 @@
           :code $ quote
             defn updater (store op op-id op-time)
               tag-match op
-                (:states cursor s) (update-states store cursor s)
-                (:reset d) $ merge store
-                  {}
+                  :states cursor s
+                  update-states store cursor s
+                (:reset d)
+                  merge store $ {}
                     :x $ :x d
                     :y $ :y d
                     :grids $ :grids d
                     :win? false
                 (:turn d) (turn-grids store :turn d)
-                (:undulate) $ if (:win? store) store
-                  update store :grids $ fn (grids)
-                    undulate-grids grids (:x store) (:y store)
+                (:undulate)
+                  if (:win? store) store $ update store :grids
+                    fn (grids)
+                      undulate-grids grids (:x store) (:y store)
                 (:hydrate-storage d) d
                 _ $ do (println "|Unknown op:" op) store
           :examples $ []
