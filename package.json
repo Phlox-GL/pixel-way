@@ -1,11 +1,14 @@
 {
   "name": "phlox",
-  "version": "0.1.0",
-  "packageManager": "yarn@4.12.0",
+  "version": "0.1.1",
+  "packageManager": "yarn@4.18.0",
   "description": "a PIXI DSL in ClojureScript",
   "main": "index.js",
   "scripts": {
-    "compile": "cr js"
+    "compile": "calcit calcit.cirru js",
+    "build": "vite build",
+    "release": "yarn compile && yarn build",
+    "dev": "calcit calcit.cirru js && vite"
   },
   "repository": {
     "type": "git",
@@ -14,10 +17,10 @@
   "author": "jiyinyiyong",
   "license": "MIT",
   "devDependencies": {
-    "vite": "^8.0.7"
+    "vite": "^8.3.1"
   },
   "dependencies": {
-    "@calcit/procs": "^0.12.14",
+    "@calcit/procs": "0.27.0",
     "@quamolit/phlox-utils": "^0.0.2",
     "@quamolit/touch-control": "^0.0.13",
     "bottom-tip": "^0.1.5",
