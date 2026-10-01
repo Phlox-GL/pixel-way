@@ -19,16 +19,19 @@ caps verify --toolchain
 yarn dev
 ```
 
-`yarn compile` generates JavaScript; `yarn build` builds the frontend assets.
+`yarn build` compiles JavaScript and builds the frontend assets once. `yarn dev`
+compiles initially and starts Vite; for live edits, run `calcit calcit.cirru -w`
+in another terminal.
 CI checks the strict entry point and all application public definitions before
 compiling and building. Edit Calcit source through the Calcit CLI.
 
 ### Deployment
 
 Frontend assets use `VITE_BASE_URL`. Pull requests get isolated COS paths at
-`https://cos-sh.tiye.me/Phlox-GL/pixel-way/pr/<number>/<run-id>/`;
+`https://cos-sh.tiye.me/Phlox-GL/pixel-way/pr/<number>/<run-id>/<attempt>/`;
 main uses `https://cos-sh.tiye.me/Phlox-GL/pixel-way/`.
-The COS action verifies uploads through its `public-base-url` input; there is no
+Released COS action v1.2.0 validates HTML references and verifies public uploads
+through its `public-base-url` input; there is no
 separate upload-verification script. The original server deployment path is unchanged.
 
 Compilation and upload checks do not prove real canvas/touch interaction.

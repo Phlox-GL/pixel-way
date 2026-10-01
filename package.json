@@ -5,10 +5,10 @@
   "description": "a PIXI DSL in ClojureScript",
   "main": "index.js",
   "scripts": {
-    "compile": "calcit calcit.cirru js",
-    "build": "vite build",
-    "release": "yarn compile && yarn build",
-    "dev": "calcit calcit.cirru js && vite"
+    "compile": "calcit calcit.cirru",
+    "build": "yarn compile && vite build",
+    "release": "yarn build",
+    "dev": "yarn compile && vite"
   },
   "repository": {
     "type": "git",
