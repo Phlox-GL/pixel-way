@@ -3,7 +3,7 @@
   :about "|Machine-generated snapshot. Do not edit directly — changes will be overwritten. Use `calcit query` to inspect and `calcit edit`/`calcit tree` to modify. Run `calcit docs agents --contract` before mutations; use `--full` for first orientation or changed contract digest. Manual edits must follow format and schema conventions, then run `calcit edit format`."
   :package |app
   :entries $ {} $ :default
-    {} (:description |) (:init-fn 'app.main/main!) (:mode :native) (:reload-fn 'app.main/reload!) (:target :browser)
+    {} (:description |) (:init-fn 'app.main/main!) (:mode :js) (:reload-fn 'app.main/reload!) (:target :browser)
       :feature-policy $ {}
       :modules $ [] |respo.calcit/ |respo-ui.calcit/ |phlox/ |touch-control/
       :type-slots $ {}
@@ -19,6 +19,7 @@
           :code $ quote $ def site
             {} (:title "|Pixel way") (:icon |http://cdn.tiye.me/logo/quamolit.png) (:storage-key |pixel-way)
           :examples $ []
+          :schema $ :: 'Map 'Tag 'String
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.config
     'app.container $ %{} 'FileEntry
@@ -70,7 +71,7 @@
                       :font-size 48
                       :font-family "|Josefin Sans"
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'Dynamic)
+          :schema $ :: 'Fn $ {} (:return 'phlox.schema/PhloxElement)
             :args $ [] $ :: 'Map 'Tag 'Dynamic
             :features $ #{} :js-ffi
         'event-coordinate $ %{} 'CodeEntry (:doc |)
@@ -95,6 +96,7 @@
         'gap $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def gap (/ 1 15)
           :examples $ []
+          :schema $ :: 'Number
         'on-reset $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn on-reset (d!)
             let
@@ -113,7 +115,7 @@
                           , true $ >
                             unsafe-coerce (js/Math.random) 'Number
                             , 0.64
-              d! :reset $ {} (:x x) (:y y)
+              d! $ :: :reset $ {} (:x x) (:y y)
                 :grids $ assoc-in grids ([] 0 0) 1
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'Unit)
@@ -142,7 +144,7 @@
                         unsafe-coerce (js/Math.ceil yi) 'Number
                         , yi
                       , gap
-                d! :turn $ {}
+                d! $ :: :turn $ {}
                   :x $ unsafe-coerce (js/Math.floor xi) 'Number
                   :y $ unsafe-coerce (js/Math.floor yi) 'Number
           :examples $ []
@@ -152,6 +154,9 @@
         'render-grid-row $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn render-grid-row (yi xs)
             map-indexed xs $ fn (xi v)
+              hint-fn $ {}
+                :args $ [] 'Number 'Dynamic
+                :return 'phlox.schema/PhloxElement
               rect $ {}
                 :position $ [] (* xi 15) (* yi 15)
                 :size $ [] 14 14
@@ -162,16 +167,16 @@
                 :on $ {}
                   :pointerover $ if (= true v)
                     fn (e d!)
-                      d! :turn $ {} (:x xi) (:y yi)
+                      d! $ :: :turn $ {} (:x xi) (:y yi)
                     fn $ e d!
                   :tap $ if (= true v)
                     fn (e d!)
-                      d! :turn $ {} (:x xi) (:y yi)
+                      d! $ :: :turn $ {} (:x xi) (:y yi)
                     fn $ e d!
           :examples $ []
           :schema $ :: 'Fn $ {}
             :args $ [] 'Number $ :: 'List 'Dynamic
-            :return $ :: 'List 'Dynamic
+            :return $ :: 'List 'phlox.schema/PhloxElement
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.container
           :require
@@ -202,20 +207,18 @@
         'dispatch! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn dispatch! (op)
             when
-              and dev? $ not=
-                unsafe-coerce
-                  option:unwrap-or (nth op 0) :unknown
-                  , 'Tag
-                , :states
+              and dev? $ match op
+                (:states _ _) false
+                _ true
               println |dispatch! op
             let
-                op-id nanoid
-                op-time $ unsafe-coerce (js/Date.now) 'Number
+                op-id $ decode-map-as (nanoid) 'String
+                op-time $ decode-map-as (js/Date.now) 'Number
                 new-store $ updater @*store op op-id op-time
               when (not= @*store new-store) (reset! *store new-store)
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'Unit)
-            :args $ [] 'Dynamic
+            :args $ [] 'Enum
             :features $ #{} :js-ffi
         'global-fonts $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def global-fonts (detect-global-fonts)
@@ -249,6 +252,9 @@
           :code $ quote $ defn render-app! ()
             render! (comp-container @*store) dispatch! $ {}
           :examples $ []
+          :schema $ :: 'Fn $ {} (:return 'Unit)
+            :args $ []
+            :features $ #{} :js-ffi
         'start-undulating! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn start-undulating! ()
             dispatch! $ :: :undulate
@@ -415,7 +421,7 @@
               _ $ do (println "|Unknown op:" op) store
           :examples $ []
           :schema $ :: 'Fn $ {}
-            :args $ [] (:: 'Map 'Tag 'Dynamic) 'Dynamic 'Dynamic 'Dynamic
+            :args $ [] (:: 'Map 'Tag 'Dynamic) 'Enum 'String 'Number
             :features $ #{} :js-ffi
             :return $ :: 'Map 'Tag 'Dynamic
       :ns $ %{} 'NsEntry (:doc |)
