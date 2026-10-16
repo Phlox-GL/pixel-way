@@ -5,7 +5,7 @@
   :entries $ {} $ :default
     {} (:description |) (:init-fn 'app.main/main!) (:mode :js) (:reload-fn 'app.main/reload!) (:target :browser)
       :feature-policy $ {}
-      :modules $ [] |respo.calcit/ |respo-ui.calcit/ |phlox/ |touch-control/
+      :modules $ [] |phlox/ |touch-control/
       :type-slots $ {}
   :files $ {}
     'app.config $ %{} 'FileEntry
@@ -27,10 +27,10 @@
         'comp-container $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defcomp comp-container (store)
             let
-                grids $ unsafe-coerce
+                grids $ decode-map-as
                   option:unwrap-or (get store :grids) nil
                   :: 'List $ :: 'List 'Dynamic
-                win? $ unsafe-coerce
+                win? $ decode-map-as
                   option:unwrap-or (get store :win?) false
                   :: 'Bool
               container ({})
@@ -77,7 +77,7 @@
         'event-coordinate $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn event-coordinate (event key)
             let
-                event-object $ unsafe-coerce event $ :: 'JsNullish 'JsObject
+                event-object $ ffi/expect-object |event event
                 data $ ffi/expect-object |event.data $ ffi/object-field |event event-object |data
                 global $ ffi/expect-object |event.data.global $ ffi/object-field |event.data data |global
               ffi/expect-number |event.coordinate $ ffi/object-field |event.data.global global key
@@ -87,12 +87,12 @@
             :features $ #{} :js-ffi
         'flatten-elements $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn flatten-elements (xs)
-            unsafe-coerce (&list:concat & xs) (:: 'List 'Dynamic)
+            foldl xs ([])
+              fn (acc row) (concat acc row)
           :examples $ []
           :schema $ :: 'Fn $ {}
-            :args $ [] $ :: 'List (:: 'List 'Dynamic)
-            :features $ #{} :js-ffi
-            :return $ :: 'List 'Dynamic
+            :args $ [] $ :: 'List (:: 'List 'phlox.schema/PhloxElement)
+            :return $ :: 'List 'phlox.schema/PhloxElement
         'gap $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def gap (/ 1 15)
           :examples $ []
@@ -113,10 +113,11 @@
                               > xi $ - x 4
                               > yi $ - y 4
                           , true $ >
-                            unsafe-coerce (js/Math.random) 'Number
+                            decode-map-as (js/Math.random) 'Number
                             , 0.64
               d! $ :: :reset $ {} (:x x) (:y y)
                 :grids $ assoc-in grids ([] 0 0) 1
+            , &unit
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'Unit)
             :args $ [] 'Dynamic
@@ -136,17 +137,17 @@
                   not $ or
                     <
                       -
-                        unsafe-coerce (js/Math.ceil xi) 'Number
+                        decode-map-as (js/Math.ceil xi) 'Number
                         , xi
                       , gap
                     <
                       -
-                        unsafe-coerce (js/Math.ceil yi) 'Number
+                        decode-map-as (js/Math.ceil yi) 'Number
                         , yi
                       , gap
                 d! $ :: :turn $ {}
-                  :x $ unsafe-coerce (js/Math.floor xi) 'Number
-                  :y $ unsafe-coerce (js/Math.floor yi) 'Number
+                  :x $ decode-map-as (js/Math.floor xi) 'Number
+                  :y $ decode-map-as (js/Math.floor yi) 'Number
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'Dynamic)
             :args $ [] 'Dynamic 'Dynamic 'Dynamic
@@ -160,10 +161,11 @@
               rect $ {}
                 :position $ [] (* xi 15) (* yi 15)
                 :size $ [] 14 14
-                :fill $ case-default v (hslx 0 0 70)
+                :fill $ match v
                   1 $ hslx 120 80 80
                   true $ hslx 200 80 40
                   false $ hslx 200 60 20
+                  _ $ hslx 0 0 70
                 :on $ {}
                   :pointerover $ if (= true v)
                     fn (e d!)
@@ -180,13 +182,14 @@
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.container
           :require
-            [] phlox.core :refer $ [] defcomp hslx rect circle text container graphics create-list
+            phlox.core :refer $ defcomp hslx rect circle text container graphics create-list
             js-ffi.contract :as ffi
     'app.main $ %{} 'FileEntry
       :defs $ {}
         '*store $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defatom *store schema/store
+          :code $ quote $ defref *store schema/store
           :examples $ []
+          :schema $ :: 'Ref $ :: 'Map 'Tag 'Dynamic
         'FontFaceObserverHost $ %{} 'CodeEntry (:doc |)
           :code $ quote $ deftrait FontFaceObserverHost
             .load $ :: 'Fn $ {}
@@ -197,11 +200,11 @@
           :schema $ :: 'Trait
         'detect-global-fonts $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn detect-global-fonts ()
-            js/Promise.all $ js-array
-              .!load $ unsafe-coerce (new FontFaceObserver "||Josefin Sans") FontFaceObserverHost
+            ffi/expect-object |global-fonts $ js/Promise.all $ js-array
+              .!load $ unsafe-coerce (new FontFaceObserver "|Josefin Sans") FontFaceObserverHost
               .!load $ unsafe-coerce (new FontFaceObserver |Hind) FontFaceObserverHost
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'Dynamic)
+          :schema $ :: 'Fn $ {} (:return 'JsObject)
             :args $ []
             :features $ #{} :js-ffi
         'dispatch! $ %{} 'CodeEntry (:doc |)
@@ -216,6 +219,7 @@
                 op-time $ decode-map-as (js/Date.now) 'Number
                 new-store $ updater @*store op op-id op-time
               when (not= @*store new-store) (reset! *store new-store)
+            , &unit
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'Unit)
             :args $ [] 'Enum
@@ -226,8 +230,8 @@
           :schema $ :: 'Dynamic
         'main! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn main! () (; js/console.log PIXI)
-            -> global-fonts $ .!then $ fn (e) (render-app!)
-            add-watch *store :change $ fn (s p) (render-app!)
+            ffi-then global-fonts $ fn (e) (render-app!)
+            add-watch! *store :change $ fn (s p) (render-app!)
             render-control!
             start-control-loop! 8 on-control-event
             start-undulating!
@@ -239,12 +243,13 @@
         'reload! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn reload! ()
             if (nil? build-errors)
-              do (println "|Code updated.") (clear-phlox-caches!) (remove-watch *store :change)
-                add-watch *store :change $ fn (store prev) (render-app!)
+              do (println "|Code updated.") (clear-phlox-caches!) (remove-watch! *store :change)
+                add-watch! *store :change $ fn (store prev) (render-app!)
                 render-app!
                 replace-control-loop! 8 on-control-event
                 hud! |ok~ |Ok
               hud! |error build-errors
+            , &unit
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'Unit)
             :args $ []
@@ -259,8 +264,8 @@
           :code $ quote $ defn start-undulating! ()
             dispatch! $ :: :undulate
             let
-                random $ unsafe-coerce (js/Math.random) 'Number
-                delay $ * 6000 $ unsafe-coerce
+                random $ decode-map-as (js/Math.random) 'Number
+                delay $ * 6000 $ decode-map-as
                   js/Math.pow (+ 0.02 random) 5
                   :: 'Number
               js/setTimeout
@@ -273,17 +278,18 @@
             :features $ #{} :js-ffi
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.main
-          :require ([] |pixi.js :as PIXI)
-            [] phlox.core :refer $ [] render! clear-phlox-caches! on-control-event
-            [] app.container :refer $ [] comp-container
-            [] app.schema :as schema
-            [] |nanoid :refer $ nanoid
-            [] app.updater :refer $ [] updater
-            [] |fontfaceobserver-es :default FontFaceObserver
-            [] app.config :refer $ [] dev?
+          :require (|pixi.js :as PIXI)
+            phlox.core :refer $ render! clear-phlox-caches! on-control-event ffi-then
+            app.container :refer $ comp-container
+            app.schema :as schema
+            |nanoid :refer $ nanoid
+            app.updater :refer $ updater
+            |fontfaceobserver-es :default FontFaceObserver
+            app.config :refer $ dev?
             |./calcit.build-errors :default build-errors
             |bottom-tip :default hud!
             touch-control.core :refer $ render-control! start-control-loop! replace-control-loop!
+            js-ffi.contract :as ffi
     'app.schema $ %{} 'FileEntry
       :defs $ {} $ 'store
         %{} 'CodeEntry (:doc |)
@@ -291,6 +297,7 @@
             {} (:win? false) (:x 0) (:y 0)
               :grids $ []
           :examples $ []
+          :schema $ :: 'Map 'Tag 'Dynamic
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.schema
     'app.updater $ %{} 'FileEntry
@@ -312,13 +319,13 @@
         'turn-grids $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn turn-grids (store op op-data)
             let
-                x $ unsafe-coerce
+                x $ decode-map-as
                   option:unwrap-or (get op-data :x) 0
                   :: 'Number
-                y $ unsafe-coerce
+                y $ decode-map-as
                   option:unwrap-or (get op-data :y) 0
                   :: 'Number
-                grids $ unsafe-coerce
+                grids $ decode-map-as
                   option:unwrap-or (get store :grids) nil
                   :: 'List $ :: 'List 'Dynamic
               if
@@ -339,10 +346,10 @@
                       assoc-in grids ([] y x) 1
                       , grids
                     next-store $ assoc store :grids next-grids
-                    yn $ unsafe-coerce
+                    yn $ decode-map-as
                       option:unwrap-or (get next-store :y) 0
                       :: 'Number
-                    xn $ unsafe-coerce
+                    xn $ decode-map-as
                       option:unwrap-or (get next-store :x) 0
                       :: 'Number
                   if
@@ -367,7 +374,7 @@
                     , cell
                   (= cell 1) cell
                   true $ let
-                      x $ unsafe-coerce (js/Math.random) 'Number
+                      x $ decode-map-as (js/Math.random) 'Number
                     cond
                         and (> x 0.1) (< x 0.15)
                         not cell
@@ -386,38 +393,42 @@
         'updater $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn updater (store op op-id op-time)
             match op
-              (:states cursor s) (update-states store cursor s)
+              (:states cursor s)
+                update-states store
+                  decode-map-as cursor $ :: 'List 'Dynamic
+                  , s
               (:reset d)
                 let
-                    payload $ unsafe-coerce d $ :: 'Map 'Tag 'Dynamic
-                    x $ unsafe-coerce
+                    payload $ decode-map-as d $ :: 'Map 'Tag 'Dynamic
+                    x $ decode-map-as
                       option:unwrap-or (get payload :x) 0
                       :: 'Number
-                    y $ unsafe-coerce
+                    y $ decode-map-as
                       option:unwrap-or (get payload :y) 0
                       :: 'Number
-                    grids $ unsafe-coerce
+                    grids $ decode-map-as
                       option:unwrap-or (get payload :grids) nil
                       :: 'List $ :: 'List 'Dynamic
                   merge store $ {} (:x x) (:y y) (:grids grids) (:win? false)
-              (:turn d) (turn-grids store :turn d)
+              (:turn d)
+                turn-grids store :turn $ decode-map-as d $ :: 'Map 'Tag 'Dynamic
               (:undulate)
                 let
-                    win? $ unsafe-coerce
+                    win? $ decode-map-as
                       option:unwrap-or (get store :win?) false
                       :: 'Bool
-                    grids $ unsafe-coerce
+                    grids $ decode-map-as
                       option:unwrap-or (get store :grids) nil
                       :: 'List $ :: 'List 'Dynamic
-                    x $ unsafe-coerce
+                    x $ decode-map-as
                       option:unwrap-or (get store :x) 0
                       :: 'Number
-                    y $ unsafe-coerce
+                    y $ decode-map-as
                       option:unwrap-or (get store :y) 0
                       :: 'Number
                   if win? store $ assoc store :grids $ undulate-grids grids x y
               (:hydrate-storage d)
-                unsafe-coerce d $ :: 'Map 'Tag 'Dynamic
+                decode-map-as d $ :: 'Map 'Tag 'Dynamic
               _ $ do (println "|Unknown op:" op) store
           :examples $ []
           :schema $ :: 'Fn $ {}
