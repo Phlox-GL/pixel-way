@@ -62,6 +62,7 @@ jobs:
           --ns app.schema --ns app.updater \
           --summary-only --format json
         calcit calcit.cirru fix --workflow strict --verify
+        calcit calcit.cirru test --require-match --summary-only --format json
 
     - name: Select CDN asset path
       id: asset-path
