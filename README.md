@@ -30,7 +30,8 @@ yarn dev
 `yarn build` compiles JavaScript and builds the frontend assets once. `yarn dev`
 compiles initially and starts Vite; for live edits, run `calcit calcit.cirru js -w`
 in another terminal.
-Local acceptance does not run Caps; CI resolves the formal dependency graph independently in strict mode and checks full strict,
+This local acceptance did not run Caps; local development still requires the installation steps above to create module links.
+CI resolves the formal dependency graph independently in strict mode and checks full strict,
 all definitions and the original five public namespaces before
 compiling and building. Edit Calcit source through the Calcit CLI.
 两项定义附着业务回归覆盖 false/缺失区分、相邻连接和胜利判定，不新增验证脚本。
