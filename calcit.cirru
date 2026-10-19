@@ -148,9 +148,12 @@
                 d! $ :: :turn $ {}
                   :x $ decode-map-as (js/Math.floor xi) 'Number
                   :y $ decode-map-as (js/Math.floor yi) 'Number
+            , &unit
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'Dynamic)
-            :args $ [] 'Dynamic 'Dynamic 'Dynamic
+          :schema $ :: 'Fn $ {} (:return 'Unit)
+            :args $ []
+              :: 'List $ :: 'List 'Dynamic
+              , 'Dynamic 'Dynamic
             :features $ #{} :js-ffi
         'render-grid-row $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn render-grid-row (yi xs)
@@ -302,20 +305,28 @@
         :code $ quote $ ns app.schema
     'app.updater $ %{} 'FileEntry
       :defs $ {}
-        'load-in $ %{} 'CodeEntry (:doc |)
+        'load-in $ %{} 'CodeEntry
+          :doc "|Reads a mixed Bool/Number grid cell. Missing row/column returns Option :none; present false remains Option :some false. The open cell boundary retains the original game representation."
           :code $ quote $ defn load-in (xs pair)
-            let[] (i j) pair $ if (&list:contains? xs i)
-              &let
-                ys $ option:unwrap-or (nth xs i) ([])
-                if (&list:contains? ys j)
-                  option:unwrap-or (nth ys j) nil
-                  , nil
-              , nil
+            option:and-then
+              nth xs $ .unwrap $ first pair
+              fn (row)
+                nth row $ .unwrap $ last pair
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'Dynamic)
+          :schema $ :: 'Fn $ {}
             :args $ []
               :: 'List $ :: 'List 'Dynamic
               :: 'List 'Number
+            :return $ :: 'Option 'Dynamic
+          :tests $ [] $ %{} 'TestEntry (:name |false-versus-missing)
+            :code $ quote $ let
+                grid $ [] $ [] false true 1
+              assert= (:: :some false)
+                load-in grid $ [] 0 0
+              assert= (:: :none)
+                load-in grid $ [] 1 0
+              assert= (:: :none)
+                load-in grid $ [] 0 3
         'turn-grids $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn turn-grids (store op op-data)
             let
@@ -335,14 +346,30 @@
                 , store $ let
                     next-grids $ if
                       or
-                        = 1 $ load-in grids $ [] y (dec x)
-                        = 1 $ load-in grids $ [] (dec y) (dec x)
-                        = 1 $ load-in grids $ [] (dec y) x
-                        = 1 $ load-in grids $ [] (inc y) x
-                        = 1 $ load-in grids $ [] (inc y) (inc x)
-                        = 1 $ load-in grids $ [] y (inc x)
-                        = 1 $ load-in grids $ [] (dec y) (inc x)
-                        = 1 $ load-in grids $ [] (inc y) (dec x)
+                        = 1 $ option:unwrap-or
+                          load-in grids $ [] y $ dec x
+                          , 0
+                        = 1 $ option:unwrap-or
+                          load-in grids $ [] (dec y) (dec x)
+                          , 0
+                        = 1 $ option:unwrap-or
+                          load-in grids $ [] (dec y) x
+                          , 0
+                        = 1 $ option:unwrap-or
+                          load-in grids $ [] (inc y) x
+                          , 0
+                        = 1 $ option:unwrap-or
+                          load-in grids $ [] (inc y) (inc x)
+                          , 0
+                        = 1 $ option:unwrap-or
+                          load-in grids $ [] y $ inc x
+                          , 0
+                        = 1 $ option:unwrap-or
+                          load-in grids $ [] (dec y) (inc x)
+                          , 0
+                        = 1 $ option:unwrap-or
+                          load-in grids $ [] (inc y) (dec x)
+                          , 0
                       assoc-in grids ([] y x) 1
                       , grids
                     next-store $ assoc store :grids next-grids
@@ -360,9 +387,18 @@
                     , next-store
           :examples $ []
           :schema $ :: 'Fn $ {}
-            :args $ [] (:: 'Map 'Tag 'Dynamic) 'Dynamic $ :: 'Map 'Tag 'Dynamic
-            :features $ #{} :js-ffi
+            :args $ [] (:: 'Map 'Tag 'Dynamic) 'Tag $ :: 'Map 'Tag 'Dynamic
             :return $ :: 'Map 'Tag 'Dynamic
+          :tests $ [] $ %{} 'TestEntry (:name |adjacency-and-win)
+            :code $ quote $ let
+                grid $ [] ([] 1 true true) ([] true true true) ([] true true true)
+                store $ {} (:grids grid) (:x 3) (:y 3) (:win? false)
+                blocked $ turn-grids store :turn $ {} (:x 2) (:y 2)
+                middle $ turn-grids store :turn $ {} (:x 1) (:y 1)
+                won $ turn-grids middle :turn $ {} (:x 2) (:y 2)
+              assert= true $ .unwrap $ get-in blocked ([] :grids 2 2)
+              assert= 1 $ .unwrap $ get-in middle ([] :grids 1 1)
+              assert= true $ .unwrap $ get won :win?
         'undulate-grids $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn undulate-grids (grids x y)
             -> grids $ map-indexed $ fn (yi row)
