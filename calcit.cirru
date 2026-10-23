@@ -12,7 +12,7 @@
       :defs $ {}
         'dev? $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def dev?
-            = |dev $ option:unwrap-or (get-env |mode) |release
+            = |dev $ .unwrap-or (get-env |mode) |release
           :examples $ []
           :schema $ :: 'Bool
         'site $ %{} 'CodeEntry (:doc |)
@@ -28,10 +28,10 @@
           :code $ quote $ defcomp comp-container (store)
             let
                 grids $ decode-map-as
-                  option:unwrap-or (get store :grids) nil
+                  .unwrap-or (get store :grids) nil
                   :: 'List $ :: 'List 'Dynamic
                 win? $ decode-map-as
-                  option:unwrap-or (get store :win?) false
+                  .unwrap-or (get store :win?) false
                   :: 'Bool
               container ({})
                 rect $ {}
@@ -129,7 +129,7 @@
                 y $ - (event-coordinate e |y) 20
                 xi $ / x 15
                 yi $ / y 15
-                v $ option:unwrap-or
+                v $ .unwrap-or
                   get-in grids $ [] yi xi
                   , false
               when
@@ -308,7 +308,7 @@
         'load-in $ %{} 'CodeEntry
           :doc "|Reads a mixed Bool/Number grid cell. Missing row/column returns Option :none; present false remains Option :some false. The open cell boundary retains the original game representation."
           :code $ quote $ defn load-in (xs pair)
-            option:and-then
+            .and-then
               nth xs $ .unwrap $ first pair
               fn (row)
                 nth row $ .unwrap $ last pair
@@ -331,56 +331,56 @@
           :code $ quote $ defn turn-grids (store op op-data)
             let
                 x $ decode-map-as
-                  option:unwrap-or (get op-data :x) 0
+                  .unwrap-or (get op-data :x) 0
                   :: 'Number
                 y $ decode-map-as
-                  option:unwrap-or (get op-data :y) 0
+                  .unwrap-or (get op-data :y) 0
                   :: 'Number
                 grids $ decode-map-as
-                  option:unwrap-or (get store :grids) nil
+                  .unwrap-or (get store :grids) nil
                   :: 'List $ :: 'List 'Dynamic
               if
-                = 1 $ option:unwrap-or
+                = 1 $ .unwrap-or
                   get-in store $ [] :grids y x
                   , 0
                 , store $ let
                     next-grids $ if
                       or
-                        = 1 $ option:unwrap-or
+                        = 1 $ .unwrap-or
                           load-in grids $ [] y $ dec x
                           , 0
-                        = 1 $ option:unwrap-or
+                        = 1 $ .unwrap-or
                           load-in grids $ [] (dec y) (dec x)
                           , 0
-                        = 1 $ option:unwrap-or
+                        = 1 $ .unwrap-or
                           load-in grids $ [] (dec y) x
                           , 0
-                        = 1 $ option:unwrap-or
+                        = 1 $ .unwrap-or
                           load-in grids $ [] (inc y) x
                           , 0
-                        = 1 $ option:unwrap-or
+                        = 1 $ .unwrap-or
                           load-in grids $ [] (inc y) (inc x)
                           , 0
-                        = 1 $ option:unwrap-or
+                        = 1 $ .unwrap-or
                           load-in grids $ [] y $ inc x
                           , 0
-                        = 1 $ option:unwrap-or
+                        = 1 $ .unwrap-or
                           load-in grids $ [] (dec y) (inc x)
                           , 0
-                        = 1 $ option:unwrap-or
+                        = 1 $ .unwrap-or
                           load-in grids $ [] (inc y) (dec x)
                           , 0
                       assoc-in grids ([] y x) 1
                       , grids
                     next-store $ assoc store :grids next-grids
                     yn $ decode-map-as
-                      option:unwrap-or (get next-store :y) 0
+                      .unwrap-or (get next-store :y) 0
                       :: 'Number
                     xn $ decode-map-as
-                      option:unwrap-or (get next-store :x) 0
+                      .unwrap-or (get next-store :x) 0
                       :: 'Number
                   if
-                    = 1 $ option:unwrap-or
+                    = 1 $ .unwrap-or
                       get-in next-store $ [] :grids (dec yn) (dec xn)
                       , 0
                     assoc next-store :win? true
@@ -437,13 +437,13 @@
                 let
                     payload $ decode-map-as d $ :: 'Map 'Tag 'Dynamic
                     x $ decode-map-as
-                      option:unwrap-or (get payload :x) 0
+                      .unwrap-or (get payload :x) 0
                       :: 'Number
                     y $ decode-map-as
-                      option:unwrap-or (get payload :y) 0
+                      .unwrap-or (get payload :y) 0
                       :: 'Number
                     grids $ decode-map-as
-                      option:unwrap-or (get payload :grids) nil
+                      .unwrap-or (get payload :grids) nil
                       :: 'List $ :: 'List 'Dynamic
                   merge store $ {} (:x x) (:y y) (:grids grids) (:win? false)
               (:turn d)
@@ -451,16 +451,16 @@
               (:undulate)
                 let
                     win? $ decode-map-as
-                      option:unwrap-or (get store :win?) false
+                      .unwrap-or (get store :win?) false
                       :: 'Bool
                     grids $ decode-map-as
-                      option:unwrap-or (get store :grids) nil
+                      .unwrap-or (get store :grids) nil
                       :: 'List $ :: 'List 'Dynamic
                     x $ decode-map-as
-                      option:unwrap-or (get store :x) 0
+                      .unwrap-or (get store :x) 0
                       :: 'Number
                     y $ decode-map-as
-                      option:unwrap-or (get store :y) 0
+                      .unwrap-or (get store :y) 0
                       :: 'Number
                   if win? store $ assoc store :grids $ undulate-grids grids x y
               (:hydrate-storage d)

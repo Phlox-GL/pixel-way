@@ -1,5 +1,5 @@
 
-{} (:calcit-version |0.30.1-alpha.5)
+{} (:calcit-version |0.30.1)
   :version |0.1.1
-  :dependencies $ {} (|Phlox-GL/phlox |0.7.15)
-    |Triadica/touch-control |0.0.31
+  :dependencies $ {} (|Phlox-GL/phlox |0.7.16)
+    |Triadica/touch-control |0.0.32
