@@ -8,8 +8,8 @@ Previews http://repo.quamolit.org/pixel-way/ .
 
 ### Usage
 
-使用者注意：当前候选配对正式 CLI / `@calcit/procs` **0.30.1**，
-依赖正式 Phlox 0.7.16 / touch-control 0.0.32；
+使用者注意：当前候选配对正式 CLI / `@calcit/procs` **0.32.1**，
+依赖正式 Phlox 0.8.0 / Touch Control 0.0.35；
 未使用的 Respo/UI 依赖已移除。游戏网格、扩散规则、状态 Map、操作协议和部署路径不变。
 修正了字体名误带 `|` 导致加载超时、画布不显示的问题，仍使用原字体来源及加载后渲染顺序。
 开放 payload 和宿主标量在使用处检查，非法输入会明确失败；不再使用数据强转。
@@ -32,11 +32,13 @@ yarn dev
 `yarn build` compiles JavaScript and builds the frontend assets once. `yarn dev`
 compiles initially and starts Vite; for live edits, run `calcit calcit.cirru js -w`
 in another terminal.
-This local acceptance did not run Caps; local development still requires the installation steps above to create module links.
+本轮已通过真实发布依赖图的 Caps strict 与工具链配对，传递 JS FFI 0.2.9 / Pointed Prompt 0.0.24；没有使用本地候选模块链接。
 CI resolves the formal dependency graph independently in strict mode and checks full strict,
 all definitions and the original five public namespaces before
 compiling and building. Edit Calcit source through the Calcit CLI.
-两项定义附着业务回归覆盖 false/缺失区分、相邻连接和胜利判定，不新增验证脚本。
+本轮由官方 CLI 迁移 2 处旧类型表达式。胜利提示的未胜利分支改为不绘制内容的空容器，满足完整 PhloxElement 返回合同，保留胜利提示和游戏规则。原连接测试中的两处 Result.unwrap 改为直接断言 Result :ok 与预期值，不改变测试输入或结果。23 个定义的 schema 保持一致；不使用强转、兼容模式或放宽基线。
+
+已通过 207 个全定义、23 个公开定义、完整 strict（diagnostics=[]）、原两项业务测试、canonical、不可变安装和 JS/Vite 构建。Yarn 统一 60 分钟依赖年龄门禁，无包级例外。
 
 ### Deployment
 
@@ -52,10 +54,8 @@ Only the current main revision deploys production; older queued main runs skip b
 Actions use exact formal tags rather than hashes; tags remain movable.
 
 Compilation and upload checks do not prove real canvas/touch interaction.
-此前 alpha 候选的 IAB 实际验收了重置生成 60×40 网格、两个相邻格子的绿色连接、定时扩散及再次重置清除路径，console 无 error/warn；不把这些历史结果作为正式 0.30.1 本轮通过证据，精确 CI 与操作结果见迁移 PR。
-重绘中静态按钮有时在截图中不可见，继续跟踪 Phlox-GL/phlox#71；不加入消费者渲染绕过。
-高频重绘期间交互工具出现过响应超时，后续仍从同一页面确认状态，没有以重启替代验收。
-完整随机棋盘通关、刷新后稳定首帧、真实触屏/移动端及 Chrome 完整操作尚未验收。
+本轮 IAB 实际验收重置生成 60×40 网格、顶部两个相邻格子依次变绿、定时扩散、再次重置清除连接，以及刷新回到初始空网格；console warn/error 为空。本轮未重现静态按钮文字消失，不宣称 Phlox-GL/phlox#71 已修复，也不加入消费者渲染绕过。
+完整随机棋盘通关和胜利提示的浏览器显示、真实触屏/移动端、HMR 及其他浏览器未验收；胜利计算仍由原业务测试覆盖。
 
 ### Workflow
 

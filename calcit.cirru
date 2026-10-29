@@ -14,12 +14,12 @@
           :code $ quote $ def dev?
             = |dev $ .unwrap-or (get-env |mode) |release
           :examples $ []
-          :schema $ :: 'Bool
+          :schema $ quote Bool
         'site $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def site
             {} (:title "|Pixel way") (:icon |http://cdn.tiye.me/logo/quamolit.png) (:storage-key |pixel-way)
           :examples $ []
-          :schema $ :: 'Map 'Tag 'String
+          :schema $ quote $ Map Tag String
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.config
     'app.container $ %{} 'FileEntry
@@ -57,23 +57,23 @@
                       :fill $ hslx 120 80 20
                       :font-size 18
                       :font-family "|Josefin Sans"
-                if win? $ container
-                  {} $ :position $ [] 400 280
-                  rect $ {}
-                    :position $ [] 0 0
-                    :size $ [] 230 60
-                    :fill $ hslx 300 20 30
-                    :alpha 0.8
-                  text $ {} (:text "|Take a rest.")
-                    :position $ [] 20 0
-                    :style $ {}
-                      :fill $ hslx 30 90 100
-                      :font-size 48
-                      :font-family "|Josefin Sans"
+                if win?
+                  container
+                    {} $ :position $ [] 400 280
+                    rect $ {}
+                      :position $ [] 0 0
+                      :size $ [] 230 60
+                      :fill $ hslx 300 20 30
+                      :alpha 0.8
+                    text $ {} (:text "|Take a rest.")
+                      :position $ [] 20 0
+                      :style $ {}
+                        :fill $ hslx 30 90 100
+                        :font-size 48
+                        :font-family "|Josefin Sans"
+                  container $ {}
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'phlox.schema/PhloxElement)
-            :args $ [] $ :: 'Map 'Tag 'Dynamic
-            :features $ #{} :js-ffi
+          :schema $ quote $ Fn (Map Tag Dynamic) (-> phlox.schema/PhloxElement) (:features :js-ffi)
         'event-coordinate $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn event-coordinate (event key)
             let
@@ -82,21 +82,19 @@
                 global $ ffi/expect-object |event.data.global $ ffi/object-field |event.data data |global
               ffi/expect-number |event.coordinate $ ffi/object-field |event.data.global global key
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'Number)
-            :args $ [] 'Dynamic 'String
-            :features $ #{} :js-ffi
+          :schema $ quote $ Fn Dynamic String (-> Number) (:features :js-ffi)
         'flatten-elements $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn flatten-elements (xs)
             foldl xs ([])
               fn (acc row) (concat acc row)
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ [] $ :: 'List (:: 'List 'phlox.schema/PhloxElement)
-            :return $ :: 'List 'phlox.schema/PhloxElement
+          :schema $ quote $ Fn
+            List $ List phlox.schema/PhloxElement
+            -> $ List phlox.schema/PhloxElement
         'gap $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def gap (/ 1 15)
           :examples $ []
-          :schema $ :: 'Number
+          :schema $ quote Number
         'on-reset $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn on-reset (d!)
             let
@@ -119,9 +117,7 @@
                 :grids $ assoc-in grids ([] 0 0) 1
             , &unit
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'Unit)
-            :args $ [] 'Dynamic
-            :features $ #{} :js-ffi
+          :schema $ quote $ Fn Dynamic (-> Unit) (:features :js-ffi)
         'on-touch $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn on-touch (grids e d!)
             let
@@ -150,17 +146,13 @@
                   :y $ decode-map-as (js/Math.floor yi) 'Number
             , &unit
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'Unit)
-            :args $ []
-              :: 'List $ :: 'List 'Dynamic
-              , 'Dynamic 'Dynamic
-            :features $ #{} :js-ffi
+          :schema $ quote $ Fn
+            List $ List Dynamic
+            , Dynamic Dynamic (-> Unit) (:features :js-ffi)
         'render-grid-row $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn render-grid-row (yi xs)
             map-indexed xs $ fn (xi v)
-              hint-fn $ {}
-                :args $ [] 'Number 'Dynamic
-                :return 'phlox.schema/PhloxElement
+              hint-fn $ Fn Number Dynamic $ -> phlox.schema/PhloxElement
               rect $ {}
                 :position $ [] (* xi 15) (* yi 15)
                 :size $ [] 14 14
@@ -179,9 +171,8 @@
                       d! $ :: :turn $ {} (:x xi) (:y yi)
                     fn $ e d!
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ [] 'Number $ :: 'List 'Dynamic
-            :return $ :: 'List 'phlox.schema/PhloxElement
+          :schema $ quote $ Fn Number (List Dynamic)
+            -> $ List phlox.schema/PhloxElement
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.container
           :require
@@ -192,24 +183,20 @@
         '*store $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defref *store schema/store
           :examples $ []
-          :schema $ :: 'Ref $ :: 'Map 'Tag 'Dynamic
+          :schema $ quote $ Ref (Map Tag Dynamic)
         'FontFaceObserverHost $ %{} 'CodeEntry (:doc |)
           :code $ quote $ deftrait FontFaceObserverHost
-            .load $ :: 'Fn $ {}
-              :args $ [] 'FontFaceObserverHost
-              :return 'Dynamic
+            .load $ quote $ Fn FontFaceObserverHost (-> Dynamic)
           :examples $ []
           :ffi $ {} (:backend :js) (:kind :external-object) (:target :browser)
-          :schema $ :: 'Trait
+          :schema $ quote Trait
         'detect-global-fonts $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn detect-global-fonts ()
             ffi/expect-object |global-fonts $ js/Promise.all $ js-array
               .!load $ unsafe-coerce (new FontFaceObserver "|Josefin Sans") FontFaceObserverHost
               .!load $ unsafe-coerce (new FontFaceObserver |Hind) FontFaceObserverHost
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'JsObject)
-            :args $ []
-            :features $ #{} :js-ffi
+          :schema $ quote $ Fn (-> JsObject) (:features :js-ffi)
         'dispatch! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn dispatch! (op)
             when
@@ -224,13 +211,11 @@
               when (not= @*store new-store) (reset! *store new-store)
             , &unit
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'Unit)
-            :args $ [] 'Enum
-            :features $ #{} :js-ffi
+          :schema $ quote $ Fn Enum (-> Unit) (:features :js-ffi)
         'global-fonts $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def global-fonts (detect-global-fonts)
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ quote Dynamic
         'main! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn main! () (; js/console.log PIXI)
             ffi-then global-fonts $ fn (e) (render-app!)
@@ -240,9 +225,7 @@
             start-undulating!
             println "|App Started"
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'Unit)
-            :args $ []
-            :features $ #{} :js-ffi
+          :schema $ quote $ Fn (-> Unit) (:features :js-ffi)
         'reload! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn reload! ()
             if (nil? build-errors)
@@ -254,15 +237,12 @@
               hud! |error build-errors
             , &unit
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'Unit)
-            :args $ []
+          :schema $ quote $ Fn (-> Unit)
         'render-app! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn render-app! ()
             render! (comp-container @*store) dispatch! $ {}
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'Unit)
-            :args $ []
-            :features $ #{} :js-ffi
+          :schema $ quote $ Fn (-> Unit) (:features :js-ffi)
         'start-undulating! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn start-undulating! ()
             dispatch! $ :: :undulate
@@ -276,9 +256,7 @@
                 , delay
               , &unit
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'Unit)
-            :args $ []
-            :features $ #{} :js-ffi
+          :schema $ quote $ Fn (-> Unit) (:features :js-ffi)
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.main
           :require (|pixi.js :as PIXI)
@@ -300,7 +278,7 @@
             {} (:win? false) (:x 0) (:y 0)
               :grids $ []
           :examples $ []
-          :schema $ :: 'Map 'Tag 'Dynamic
+          :schema $ quote $ Map Tag Dynamic
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.schema
     'app.updater $ %{} 'FileEntry
@@ -313,11 +291,10 @@
               fn (row)
                 nth row $ .unwrap $ last pair
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ []
-              :: 'List $ :: 'List 'Dynamic
-              :: 'List 'Number
-            :return $ :: 'Option 'Dynamic
+          :schema $ quote $ Fn
+            List $ List Dynamic
+            List Number
+            -> $ Option Dynamic
           :tests $ [] $ %{} 'TestEntry (:name |false-versus-missing)
             :code $ quote $ let
                 grid $ [] $ [] false true 1
@@ -386,9 +363,8 @@
                     assoc next-store :win? true
                     , next-store
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ [] (:: 'Map 'Tag 'Dynamic) 'Tag $ :: 'Map 'Tag 'Dynamic
-            :return $ :: 'Map 'Tag 'Dynamic
+          :schema $ quote $ Fn (Map Tag Dynamic) Tag (Map Tag Dynamic)
+            -> $ Map Tag Dynamic
           :tests $ [] $ %{} 'TestEntry (:name |adjacency-and-win)
             :code $ quote $ let
                 grid $ [] ([] 1 true true) ([] true true true) ([] true true true)
@@ -396,8 +372,10 @@
                 blocked $ turn-grids store :turn $ {} (:x 2) (:y 2)
                 middle $ turn-grids store :turn $ {} (:x 1) (:y 1)
                 won $ turn-grids middle :turn $ {} (:x 2) (:y 2)
-              assert= true $ .unwrap $ get-in blocked ([] :grids 2 2)
-              assert= 1 $ .unwrap $ get-in middle ([] :grids 1 1)
+              assert= (Result :ok true)
+                get-in blocked $ [] :grids 2 2
+              assert= (Result :ok 1)
+                get-in middle $ [] :grids 1 1
               assert= true $ .unwrap $ get won :win?
         'undulate-grids $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn undulate-grids (grids x y)
@@ -420,12 +398,11 @@
                         , true
                       true cell
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ []
-              :: 'List $ :: 'List 'Dynamic
-              , 'Number 'Number
-            :features $ #{} :js-ffi
-            :return $ :: 'List $ :: 'List 'Dynamic
+          :schema $ quote $ Fn
+            List $ List Dynamic
+            , Number Number
+              -> $ List $ List Dynamic
+              :features :js-ffi
         'updater $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn updater (store op op-id op-time)
             match op
@@ -467,10 +444,9 @@
                 decode-map-as d $ :: 'Map 'Tag 'Dynamic
               _ $ do (println "|Unknown op:" op) store
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ [] (:: 'Map 'Tag 'Dynamic) 'Enum 'String 'Number
-            :features $ #{} :js-ffi
-            :return $ :: 'Map 'Tag 'Dynamic
+          :schema $ quote $ Fn (Map Tag Dynamic) Enum String Number
+            -> $ Map Tag Dynamic
+            :features :js-ffi
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.updater
           :require $ phlox.cursor :refer $ update-states
