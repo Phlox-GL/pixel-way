@@ -27,18 +27,19 @@
         'comp-container $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defcomp comp-container (store)
             let
-                grids $ decode-map-as
-                  .unwrap-or (get store :grids) nil
-                  :: 'List $ :: 'List 'Dynamic
-                win? $ decode-map-as
-                  .unwrap-or (get store :win?) false
-                  :: 'Bool
+                grids $ :grids store
+                win? $ :win? store
               container ({})
                 rect $ {}
                   :position $ [] 0 0
                   :size $ [] 0 0
                   :on $ {} $ :touchmove
-                    fn (e d!) (on-touch grids e d!)
+                    fn (e d!)
+                      hint-fn $ Fn Dynamic
+                        Fn app.schema/GameOp $ -> Unit
+                        -> Unit
+                        :features :js-ffi
+                      on-touch grids e d!
                 create-list :container
                   {} $ :position $ [] -380 -280
                   -> grids (map-indexed render-grid-row) (flatten-elements)
@@ -50,7 +51,12 @@
                     :size $ [] 48 34
                     :fill $ hslx 40 80 80
                     :on $ {} $ :pointerdown
-                      fn (e d!) (on-reset d!)
+                      fn (e d!)
+                        hint-fn $ Fn Dynamic
+                          Fn app.schema/GameOp $ -> Unit
+                          -> Unit
+                          :features :js-ffi
+                        on-reset d!
                   text $ {} (:text "|润!")
                     :position $ [] 8 4
                     :style $ {}
@@ -73,7 +79,7 @@
                         :font-family "|Josefin Sans"
                   container $ {}
           :examples $ []
-          :schema $ quote $ Fn (Map Tag Dynamic) (-> phlox.schema/PhloxElement) (:features :js-ffi)
+          :schema $ quote $ Fn app.schema/Store (-> phlox.schema/PhloxElement) (:features :js-ffi)
         'event-coordinate $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn event-coordinate (event key)
             let
@@ -113,11 +119,15 @@
                           , true $ >
                             decode-map-as (js/Math.random) 'Number
                             , 0.64
-              d! $ :: :reset $ {} (:x x) (:y y)
-                :grids $ assoc-in grids ([] 0 0) 1
+              d! $ app.schema/GameOp :reset x y $ app.updater/set-cell
+                decode-map-as grids $ List $ List app.schema/Cell
+                , 0 0 1
             , &unit
           :examples $ []
-          :schema $ quote $ Fn Dynamic (-> Unit) (:features :js-ffi)
+          :schema $ quote $ Fn
+            Fn app.schema/GameOp $ -> Unit
+            -> Unit
+            :features :js-ffi
         'on-touch $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn on-touch (grids e d!)
             let
@@ -125,9 +135,13 @@
                 y $ - (event-coordinate e |y) 20
                 xi $ / x 15
                 yi $ / y 15
-                v $ .unwrap-or
-                  get-in grids $ [] yi xi
-                  , false
+                v $ match
+                  app.updater/load-in grids $ [] yi xi
+                  (:none) false
+                  (:some v)
+                    match v
+                      (Bool b) b
+                      (Number _) false
               when
                 and (= v true)
                   not $ or
@@ -141,37 +155,46 @@
                         decode-map-as (js/Math.ceil yi) 'Number
                         , yi
                       , gap
-                d! $ :: :turn $ {}
-                  :x $ decode-map-as (js/Math.floor xi) 'Number
-                  :y $ decode-map-as (js/Math.floor yi) 'Number
+                d! $ app.schema/GameOp :turn
+                  decode-map-as (js/Math.floor xi) 'Number
+                  decode-map-as (js/Math.floor yi) 'Number
             , &unit
           :examples $ []
           :schema $ quote $ Fn
-            List $ List Dynamic
-            , Dynamic Dynamic (-> Unit) (:features :js-ffi)
+            List $ List app.schema/Cell
+            , Dynamic
+              Fn app.schema/GameOp $ -> Unit
+              -> Unit
+              :features :js-ffi
         'render-grid-row $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn render-grid-row (yi xs)
             map-indexed xs $ fn (xi v)
-              hint-fn $ Fn Number Dynamic $ -> phlox.schema/PhloxElement
+              hint-fn $ Fn Number app.schema/Cell $ -> phlox.schema/PhloxElement
               rect $ {}
                 :position $ [] (* xi 15) (* yi 15)
                 :size $ [] 14 14
                 :fill $ match v
-                  1 $ hslx 120 80 80
-                  true $ hslx 200 80 40
-                  false $ hslx 200 60 20
-                  _ $ hslx 0 0 70
+                  (Number n)
+                    if (= 1 n) (hslx 120 80 80) (hslx 0 0 70)
+                  (Bool b)
+                    if b (hslx 200 80 40) (hslx 200 60 20)
                 :on $ {}
-                  :pointerover $ if (= true v)
+                  :pointerover $ if
+                    match v
+                      (Bool b) b
+                      (Number _) false
                     fn (e d!)
-                      d! $ :: :turn $ {} (:x xi) (:y yi)
+                      d! $ app.schema/GameOp :turn xi yi
                     fn $ e d!
-                  :tap $ if (= true v)
+                  :tap $ if
+                    match v
+                      (Bool b) b
+                      (Number _) false
                     fn (e d!)
-                      d! $ :: :turn $ {} (:x xi) (:y yi)
+                      d! $ app.schema/GameOp :turn xi yi
                     fn $ e d!
           :examples $ []
-          :schema $ quote $ Fn Number (List Dynamic)
+          :schema $ quote $ Fn Number (List app.schema/Cell)
             -> $ List phlox.schema/PhloxElement
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.container
@@ -183,39 +206,42 @@
         '*store $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defref *store schema/store
           :examples $ []
-          :schema $ quote $ Ref (Map Tag Dynamic)
-        'FontFaceObserverHost $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ deftrait FontFaceObserverHost
-            .load $ quote $ Fn FontFaceObserverHost (-> Dynamic)
-          :examples $ []
-          :ffi $ {} (:backend :js) (:kind :external-object) (:target :browser)
-          :schema $ quote Trait
+          :schema $ quote $ Ref app.schema/Store
         'detect-global-fonts $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn detect-global-fonts ()
-            ffi/expect-object |global-fonts $ js/Promise.all $ js-array
-              .!load $ unsafe-coerce (new FontFaceObserver "|Josefin Sans") FontFaceObserverHost
-              .!load $ unsafe-coerce (new FontFaceObserver |Hind) FontFaceObserverHost
+            js-cast
+              js/Promise.all $ js-array
+                phlox.core/ffi-load-font $ new FontFaceObserver "|Josefin Sans"
+                phlox.core/ffi-load-font $ new FontFaceObserver |Hind
+              , 'phlox.core/PromiseHost
           :examples $ []
-          :schema $ quote $ Fn (-> JsObject) (:features :js-ffi)
+          :schema $ quote $ Fn (-> phlox.core/PromiseHost) (:features :js-ffi)
         'dispatch! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn dispatch! (op)
-            when
-              and dev? $ match op
-                (:states _ _) false
-                _ true
-              println |dispatch! op
             let
-                op-id $ decode-map-as (nanoid) 'String
-                op-time $ decode-map-as (js/Date.now) 'Number
-                new-store $ updater @*store op op-id op-time
-              when (not= @*store new-store) (reset! *store new-store)
+                next $ updater @*store op
+              when (not= next @*store) (reset! *store next)
             , &unit
           :examples $ []
-          :schema $ quote $ Fn Enum (-> Unit) (:features :js-ffi)
+          :schema $ quote $ Fn app.schema/Op (-> Unit) (:features :js-ffi)
+        'dispatch-view! $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defn dispatch-view! (raw)
+            if
+              = (enum-definition raw) (Option :some app.schema/GameOp)
+              dispatch! $ decode-map-as raw 'app.schema/GameOp
+              match raw
+                (:states path value)
+                  dispatch! $ app.schema/WidgetOp :states
+                    decode-map-as path $ List app.schema/CoordKey
+                    , value
+                _ $ when dev? $ println "|Unknown Phlox operation" raw
+            , &unit
+          :examples $ []
+          :schema $ quote $ Fn AnyEnum (-> Unit) (:features :js-ffi) (:open :reflect)
         'global-fonts $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def global-fonts (detect-global-fonts)
           :examples $ []
-          :schema $ quote Dynamic
+          :schema $ quote phlox.core/PromiseHost
         'main! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn main! () (; js/console.log PIXI)
             ffi-then global-fonts $ fn (e) (render-app!)
@@ -245,7 +271,7 @@
           :schema $ quote $ Fn (-> Unit) (:features :js-ffi)
         'start-undulating! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn start-undulating! ()
-            dispatch! $ :: :undulate
+            dispatch! $ app.schema/GameOp :undulate
             let
                 random $ decode-map-as (js/Math.random) 'Number
                 delay $ * 6000 $ decode-map-as
@@ -263,26 +289,66 @@
             phlox.core :refer $ render! clear-phlox-caches! on-control-event ffi-then
             app.container :refer $ comp-container
             app.schema :as schema
-            |nanoid :refer $ nanoid
             app.updater :refer $ updater
             |fontfaceobserver-es :default FontFaceObserver
             app.config :refer $ dev?
             |./calcit.build-errors :default build-errors
             |bottom-tip :default hud!
             touch-control.core :refer $ render-control! start-control-loop! replace-control-loop!
-            js-ffi.contract :as ffi
     'app.schema $ %{} 'FileEntry
-      :defs $ {} $ 'store
-        %{} 'CodeEntry (:doc |)
-          :code $ quote $ def store
-            {} (:win? false) (:x 0) (:y 0)
-              :grids $ []
+      :defs $ {}
+        'Cell $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defunion Cell Bool Number
           :examples $ []
-          :schema $ quote $ Map Tag Dynamic
+          :schema $ quote UnionDef
+        'CoordKey $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defunion CoordKey Tag String Number
+          :examples $ []
+          :schema $ quote UnionDef
+        'GameOp $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defenum GameOp
+            :reset Number Number $ List $ List app.schema/Cell
+            :turn Number Number
+            :undulate
+          :examples $ []
+          :schema $ quote EnumDef
+        'Op $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defunion Op GameOp WidgetOp
+          :examples $ []
+          :schema $ quote UnionDef
+        'Store $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defstruct Store (:win? Bool) (:x Number) (:y Number)
+            :grids $ List $ List app.schema/Cell
+            :states $ Map Dynamic Dynamic
+          :examples $ []
+          :schema $ quote StructDef
+        'WidgetOp $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defenum WidgetOp
+            :states (List app.schema/CoordKey) Dynamic
+          :examples $ []
+          :schema $ quote EnumDef
+        'store $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ def store
+            Store :win? false :x 0 :y 0 :grids ([]) :states $ {}
+          :examples $ []
+          :schema $ quote app.schema/Store
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.schema
     'app.updater $ %{} 'FileEntry
       :defs $ {}
+        'connected-at? $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defn connected-at? (grid pos)
+            match (load-in grid pos)
+              (:none) false
+              (:some value)
+                match value
+                  (Bool _) false
+                  (Number n) (= n 1)
+          :examples $ []
+          :schema $ quote $ Fn
+            List $ List app.schema/Cell
+            List Number
+            -> Bool
         'load-in $ %{} 'CodeEntry
           :doc "|Reads a mixed Bool/Number grid cell. Missing row/column returns Option :none; present false remains Option :some false. The open cell boundary retains the original game representation."
           :code $ quote $ defn load-in (xs pair)
@@ -292,106 +358,92 @@
                 nth row $ .unwrap $ last pair
           :examples $ []
           :schema $ quote $ Fn
-            List $ List Dynamic
+            List $ List app.schema/Cell
             List Number
-            -> $ Option Dynamic
+            -> $ Option app.schema/Cell
           :tests $ [] $ %{} 'TestEntry (:name |false-versus-missing)
             :code $ quote $ let
-                grid $ [] $ [] false true 1
-              assert= (:: :some false)
+                grid $ decode-map-as
+                  [] $ [] false true 1
+                  List $ List app.schema/Cell
+              assert= (Option :some false)
                 load-in grid $ [] 0 0
-              assert= (:: :none)
+              assert= (Option :none)
                 load-in grid $ [] 1 0
-              assert= (:: :none)
+              assert= (Option :none)
                 load-in grid $ [] 0 3
+        'set-cell $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defn set-cell (grid y x value)
+            assoc grid y $ assoc
+              .unwrap $ nth grid y
+              , x value
+          :examples $ []
+          :schema $ quote $ Fn
+            List $ List app.schema/Cell
+            , Number Number app.schema/Cell
+              -> $ List $ List app.schema/Cell
         'turn-grids $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defn turn-grids (store op op-data)
+          :code $ quote $ defn turn-grids (store x y)
             let
-                x $ decode-map-as
-                  .unwrap-or (get op-data :x) 0
-                  :: 'Number
-                y $ decode-map-as
-                  .unwrap-or (get op-data :y) 0
-                  :: 'Number
-                grids $ decode-map-as
-                  .unwrap-or (get store :grids) nil
-                  :: 'List $ :: 'List 'Dynamic
+                grids $ :grids store
               if
-                = 1 $ .unwrap-or
-                  get-in store $ [] :grids y x
-                  , 0
+                connected-at? (:grids store) ([] y x)
                 , store $ let
                     next-grids $ if
                       or
-                        = 1 $ .unwrap-or
-                          load-in grids $ [] y $ dec x
-                          , 0
-                        = 1 $ .unwrap-or
-                          load-in grids $ [] (dec y) (dec x)
-                          , 0
-                        = 1 $ .unwrap-or
-                          load-in grids $ [] (dec y) x
-                          , 0
-                        = 1 $ .unwrap-or
-                          load-in grids $ [] (inc y) x
-                          , 0
-                        = 1 $ .unwrap-or
-                          load-in grids $ [] (inc y) (inc x)
-                          , 0
-                        = 1 $ .unwrap-or
-                          load-in grids $ [] y $ inc x
-                          , 0
-                        = 1 $ .unwrap-or
-                          load-in grids $ [] (dec y) (inc x)
-                          , 0
-                        = 1 $ .unwrap-or
-                          load-in grids $ [] (inc y) (dec x)
-                          , 0
-                      assoc-in grids ([] y x) 1
+                        connected-at? grids $ [] y $ dec x
+                        connected-at? grids $ [] (dec y) (dec x)
+                        connected-at? grids $ [] (dec y) x
+                        connected-at? grids $ [] (inc y) x
+                        connected-at? grids $ [] (inc y) (inc x)
+                        connected-at? grids $ [] y $ inc x
+                        connected-at? grids $ [] (dec y) (inc x)
+                        connected-at? grids $ [] (inc y) (dec x)
+                      set-cell grids y x 1
                       , grids
-                    next-store $ assoc store :grids next-grids
-                    yn $ decode-map-as
-                      .unwrap-or (get next-store :y) 0
-                      :: 'Number
-                    xn $ decode-map-as
-                      .unwrap-or (get next-store :x) 0
-                      :: 'Number
+                    next-store $ &struct:assoc store :grids next-grids
+                    yn $ :y next-store
+                    xn $ :x next-store
                   if
-                    = 1 $ .unwrap-or
-                      get-in next-store $ [] :grids (dec yn) (dec xn)
-                      , 0
-                    assoc next-store :win? true
+                    connected-at? (:grids next-store)
+                      [] (dec yn) (dec xn)
+                    &struct:assoc next-store :win? true
                     , next-store
           :examples $ []
-          :schema $ quote $ Fn (Map Tag Dynamic) Tag (Map Tag Dynamic)
-            -> $ Map Tag Dynamic
+          :schema $ quote $ Fn app.schema/Store Number Number (-> app.schema/Store)
           :tests $ [] $ %{} 'TestEntry (:name |adjacency-and-win)
             :code $ quote $ let
                 grid $ [] ([] 1 true true) ([] true true true) ([] true true true)
-                store $ {} (:grids grid) (:x 3) (:y 3) (:win? false)
-                blocked $ turn-grids store :turn $ {} (:x 2) (:y 2)
-                middle $ turn-grids store :turn $ {} (:x 1) (:y 1)
-                won $ turn-grids middle :turn $ {} (:x 2) (:y 2)
-              assert= (Result :ok true)
-                get-in blocked $ [] :grids 2 2
-              assert= (Result :ok 1)
-                get-in middle $ [] :grids 1 1
-              assert= true $ .unwrap $ get won :win?
+                store $ app.schema/Store :grids
+                  decode-map-as grid $ List $ List app.schema/Cell
+                  , :x 3 :y 3 :win? false :states $ {}
+                blocked $ turn-grids store 2 2
+                middle $ turn-grids store 1 1
+                won $ turn-grids middle 2 2
+              assert= (Option :some true)
+                load-in (:grids blocked) ([] 2 2)
+              assert= (Option :some 1)
+                load-in (:grids middle) ([] 1 1)
+              assert= true $ :win? won
         'undulate-grids $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn undulate-grids (grids x y)
             -> grids $ map-indexed $ fn (yi row)
               -> row $ map-indexed $ fn (xi cell)
+                hint-fn $ Fn Number app.schema/Cell (-> app.schema/Cell) (:features :js-ffi)
                 cond
                     and (< xi 3) (< yi 3)
                     , cell
                   (and (> xi (- x 4)) (> yi (- y 4)))
                     , cell
-                  (= cell 1) cell
+                  (match cell ((Bool _) false) ((Number n) (= n 1)))
+                    , cell
                   true $ let
                       x $ decode-map-as (js/Math.random) 'Number
                     cond
                         and (> x 0.1) (< x 0.15)
-                        not cell
+                        match cell
+                          (Bool b) (not b)
+                          (Number _) false
                       (and (> x 0.3) (< x 0.4))
                         , false
                       (and (> x 0.5) (< x 0.52))
@@ -399,54 +451,32 @@
                       true cell
           :examples $ []
           :schema $ quote $ Fn
-            List $ List Dynamic
+            List $ List app.schema/Cell
             , Number Number
-              -> $ List $ List Dynamic
+              -> $ List $ List app.schema/Cell
               :features :js-ffi
         'updater $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defn updater (store op op-id op-time)
+          :code $ quote $ defn updater (store op)
             match op
-              (:states cursor s)
-                update-states store
-                  decode-map-as cursor $ :: 'List 'Dynamic
-                  , s
-              (:reset d)
-                let
-                    payload $ decode-map-as d $ :: 'Map 'Tag 'Dynamic
-                    x $ decode-map-as
-                      .unwrap-or (get payload :x) 0
-                      :: 'Number
-                    y $ decode-map-as
-                      .unwrap-or (get payload :y) 0
-                      :: 'Number
-                    grids $ decode-map-as
-                      .unwrap-or (get payload :grids) nil
-                      :: 'List $ :: 'List 'Dynamic
-                  merge store $ {} (:x x) (:y y) (:grids grids) (:win? false)
-              (:turn d)
-                turn-grids store :turn $ decode-map-as d $ :: 'Map 'Tag 'Dynamic
-              (:undulate)
-                let
-                    win? $ decode-map-as
-                      .unwrap-or (get store :win?) false
-                      :: 'Bool
-                    grids $ decode-map-as
-                      .unwrap-or (get store :grids) nil
-                      :: 'List $ :: 'List 'Dynamic
-                    x $ decode-map-as
-                      .unwrap-or (get store :x) 0
-                      :: 'Number
-                    y $ decode-map-as
-                      .unwrap-or (get store :y) 0
-                      :: 'Number
-                  if win? store $ assoc store :grids $ undulate-grids grids x y
-              (:hydrate-storage d)
-                decode-map-as d $ :: 'Map 'Tag 'Dynamic
-              _ $ do (println "|Unknown op:" op) store
+              (app.schema/GameOp action)
+                match action
+                  (:reset x y grid)
+                    app.schema/Store :x x :y y :grids grid :win? false :states $ :states store
+                  (:turn x y) (turn-grids store x y)
+                  (:undulate)
+                    if (:win? store) store $ &struct:assoc store :grids $ undulate-grids (:grids store) (:x store) (:y store)
+              (app.schema/WidgetOp action)
+                match action $
+                  :states path value
+                  &struct:assoc store :states $ decode-map-as
+                    .unwrap $ get
+                      update-states
+                        {} $ :states $ :states store
+                        , path value
+                      , :states
+                    Map Dynamic Dynamic
           :examples $ []
-          :schema $ quote $ Fn (Map Tag Dynamic) Enum String Number
-            -> $ Map Tag Dynamic
-            :features :js-ffi
+          :schema $ quote $ Fn app.schema/Store app.schema/Op (-> app.schema/Store) (:features :js-ffi)
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.updater
           :require $ phlox.cursor :refer $ update-states
