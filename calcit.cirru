@@ -35,7 +35,7 @@
                   :size $ [] 0 0
                   :on $ {} $ :touchmove
                     fn (e d!)
-                      hint-fn $ Fn Dynamic
+                      hint-fn $ Fn JsObject
                         Fn app.schema/GameOp $ -> Unit
                         -> Unit
                         :features :js-ffi
@@ -52,7 +52,7 @@
                     :fill $ hslx 40 80 80
                     :on $ {} $ :pointerdown
                       fn (e d!)
-                        hint-fn $ Fn Dynamic
+                        hint-fn $ Fn JsObject
                           Fn app.schema/GameOp $ -> Unit
                           -> Unit
                           :features :js-ffi
@@ -88,7 +88,7 @@
                 global $ ffi/expect-object |event.data.global $ ffi/object-field |event.data data |global
               ffi/expect-number |event.coordinate $ ffi/object-field |event.data.global global key
           :examples $ []
-          :schema $ quote $ Fn Dynamic String (-> Number) (:features :js-ffi)
+          :schema $ quote $ Fn JsObject String (-> Number) (:features :js-ffi)
         'flatten-elements $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn flatten-elements (xs)
             foldl xs ([])
@@ -162,7 +162,7 @@
           :examples $ []
           :schema $ quote $ Fn
             List $ List app.schema/Cell
-            , Dynamic
+            , JsObject
               Fn app.schema/GameOp $ -> Unit
               -> Unit
               :features :js-ffi
@@ -224,20 +224,6 @@
             , &unit
           :examples $ []
           :schema $ quote $ Fn app.schema/Op (-> Unit) (:features :js-ffi)
-        'dispatch-view! $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defn dispatch-view! (raw)
-            if
-              = (enum-definition raw) (Option :some app.schema/GameOp)
-              dispatch! $ decode-map-as raw 'app.schema/GameOp
-              match raw
-                (:states path value)
-                  dispatch! $ app.schema/WidgetOp :states
-                    decode-map-as path $ List app.schema/CoordKey
-                    , value
-                _ $ when dev? $ println "|Unknown Phlox operation" raw
-            , &unit
-          :examples $ []
-          :schema $ quote $ Fn AnyEnum (-> Unit) (:features :js-ffi) (:open :reflect)
         'global-fonts $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def global-fonts (detect-global-fonts)
           :examples $ []
