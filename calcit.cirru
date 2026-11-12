@@ -223,7 +223,7 @@
               when (not= next @*store) (reset! *store next)
             , &unit
           :examples $ []
-          :schema $ quote $ Fn schema/GameOp (-> Unit) (:features :js-ffi)
+          :schema $ quote $ Fn schema/GameOp (-> Unit) (:features :js-ffi :state)
         'global-fonts $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def global-fonts (detect-global-fonts)
           :examples $ []
@@ -237,7 +237,7 @@
             start-undulating!
             println "|App Started"
           :examples $ []
-          :schema $ quote $ Fn (-> Unit) (:features :js-ffi)
+          :schema $ quote $ Fn (-> Unit) (:features :io :js-ffi :state)
         'reload! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn reload! ()
             if (nil? build-errors)
@@ -249,12 +249,12 @@
               hud! |error build-errors
             , &unit
           :examples $ []
-          :schema $ quote $ Fn (-> Unit)
+          :schema $ quote $ Fn (-> Unit) (:features :io :state)
         'render-app! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn render-app! ()
             render! (comp-container @*store) dispatch! $ {}
           :examples $ []
-          :schema $ quote $ Fn (-> Unit) (:features :js-ffi)
+          :schema $ quote $ Fn (-> Unit) (:features :js-ffi :state)
         'start-undulating! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn start-undulating! ()
             dispatch! $ app.schema/GameOp :undulate
@@ -268,7 +268,7 @@
                 , delay
               , &unit
           :examples $ []
-          :schema $ quote $ Fn (-> Unit) (:features :js-ffi)
+          :schema $ quote $ Fn (-> Unit) (:features :js-ffi :state)
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.main
           :require (|pixi.js :as PIXI)
