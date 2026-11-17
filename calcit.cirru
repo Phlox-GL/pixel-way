@@ -254,7 +254,7 @@
           :code $ quote $ defn render-app! ()
             render! (comp-container @*store) dispatch! $ {}
           :examples $ []
-          :schema $ quote $ Fn (-> Unit) (:features :js-ffi :state)
+          :schema $ quote $ Fn (-> Unit) (:features :io :js-ffi :state)
         'start-undulating! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn start-undulating! ()
             dispatch! $ app.schema/GameOp :undulate
