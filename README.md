@@ -8,7 +8,7 @@ Previews http://repo.quamolit.org/pixel-way/ .
 
 ### Usage
 
-使用配对的正式 Calcit 与 `@calcit/procs` 0.43.0，以及 Phlox 0.9.6 和 Touch Control 0.0.41。
+使用配对的正式 Calcit 与 `@calcit/procs` 0.44.0，以及 Phlox 0.9.7 和 Touch Control 0.0.42。
 棋盘尺寸、连接、扩散和胜利条件保持原样，热更新仍通过 HUD 提示。
 棋盘格由 Bool 与 Number 的 union 表示，越界由 Option 表示。游戏操作和 Phlox 游标事件分别建模。
 
@@ -42,8 +42,8 @@ separate upload-verification script. The original server deployment path is unch
 Only the current main revision deploys production; older queued main runs skip both COS and rsync.
 Actions use exact formal tags rather than hashes; tags remain movable.
 
-隔离浏览器覆盖生成 60×40 网格、相邻格连接、扩散保留已连接格、再次重置和刷新。
-使用本地替代字体。实际触屏、全盘通关和热重载尚未复验。
+先前版本的隔离浏览器验收覆盖生成 60×40 网格、相邻格连接、扩散保留已连接格、再次重置和刷新。
+使用本地替代字体；本次 0.44 升级尚未重新进行浏览器验收。实际触屏、全盘通关和热重载尚未复验。
 
 ### Workflow
 
