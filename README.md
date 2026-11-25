@@ -8,7 +8,7 @@ Previews http://repo.quamolit.org/pixel-way/ .
 
 ### Usage
 
-使用配对的正式 Calcit 与 `@calcit/procs` 0.44.0，以及 Phlox 0.10.0 和 Touch Control 0.0.43。
+使用配对的正式 Calcit 与 `@calcit/procs` 0.45.1，以及 Phlox 0.12.2 和 Touch Control 0.0.45。
 棋盘尺寸、连接、扩散和胜利条件保持原样，热更新仍通过 HUD 提示。
 棋盘格由 Bool 与 Number 的 union 表示，越界由 Option 表示。游戏操作和 Phlox 游标事件分别建模。
 
